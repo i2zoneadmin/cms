@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Client</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h1>Add Client</h1>
+    <form method="POST">
+        <label for="client_name">Client Name:</label>
+        <input type="text" name="client_name" required>
+
+        <label for="contract_date">Contract Date:</label>
+        <input type="date" name="contract_date" required>
+
+        <label for="deadline">Deadline:</label>
+        <input type="date" name="deadline" required>
+
+        <label for="status">Status:</label>
+        <select name="status" required>
+            <option value="Under Discussion">Under Discussion</option>
+            <option value="Contract Awaiting">Contract Awaiting</option>
+            <option value="Active">Active</option>
+            <option value="Require Critical Attention">Require Critical Attention</option>
+            <option value="Completed Contract">Completed Contract</option>
+            <option value="Closed">Closed</option>
+        </select>
+
+        <label for="description">Description:</label>
+        <textarea name="description" rows="4" required></textarea>
+
+        <label for="progress">Progress:</label>
+        <input type="text" name="progress" required>
+
+        <label for="upwork_account">Upwork Account:</label>
+        <select name="upwork_account" onchange="toggleUpworkField(this)" required>
+            <option value="Zain's">Zain's</option>
+            <option value="Hammad's">Hammad's</option>
+            <option value="Rizwan's">Rizwan's</option>
+            <option value="Other">Other</option>
+        </select>
+        <input type="text" name="upwork_account_other" id="upwork_account_other" style="display:none;" placeholder="Enter manually">
+
+        <label for="billing_type">Billing Type:</label>
+        <select name="billing_type" id="billing_type" onchange="toggleBillingFields()" required>
+            <option value="project">Project-Based</option>
+            <option value="hourly">Hourly-Based</option>
+        </select>
+
+        <label id="price_label" for="price">Total Cost:</label>
+        <input type="number" step="0.01" name="price" required>
+
+        <label for="currency">Currency:</label>
+        <select name="currency" required>
+            <option value="USD">Dollar (USD)</option>
+            <option value="EUR">Euro (EUR)</option>
+            <option value="GBP">Pound (GBP)</option>
+            <option value="PKR">Pakistani Rupee (PKR)</option>
+        </select>
+
+        <button type="submit">Add Client</button>
+    </form>
+    <script>
+        function toggleUpworkField(select) {
+            document.getElementById('upwork_account_other').style.display = select.value === 'Other' ? 'block' : 'none';
+        }
+
+        function toggleBillingFields() {
+            const billingType = document.getElementById('billing_type').value;
+            document.getElementById('price_label').innerText =
+                billingType === 'hourly' ? 'Rate Per Hour:' : 'Total Cost:';
+        }
+    </script>
+</body>
+</html>
+
