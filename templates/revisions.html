@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Revisions</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/revisions.css">
 </head>
 <body>
     <h1>Revisions for Client</h1>
@@ -25,4 +25,33 @@
     </table>
 </body>
 </html>
+ -->
 
+
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revisions</title>
+    <link rel="stylesheet" href="/static/css/revisions.css">
+</head>
+<body>
+    <h1>Revisions for Client</h1>
+    <a href="/" style="text-align: center;">Back to Dashboard</a>
+    <table>
+        <tr>
+            <th>Change Date</th>
+            <th>Changed By</th>
+            <th>Changes</th>
+        </tr>
+        {% for revision in revisions %}
+        <tr>
+            <td>{{ revision.change_date.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ User.query.get(revision.changed_by).username }}</td>
+            <td>{{ revision.changes }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
