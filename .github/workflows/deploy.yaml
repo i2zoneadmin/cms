@@ -19,10 +19,12 @@ jobs:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Deploy to EC2
+      env:
+        EC2_HOST: root@<EC2_PUBLIC_IP> # Replace with your EC2 public IP
       run: |
-        ssh -o StrictHostKeyChecking=no root@<EC2_PUBLIC_IP> << EOF
-        cd ~/project
-        git pull origin main
-        pip3 install -r requirements.txt
+        ssh -o StrictHostKeyChecking=no $EC2_HOST "
+        cd ~/project &&
+        git pull origin main &&
+        pip3 install -r requirements.txt &&
         sudo systemctl restart flask_app.service
-        EOF
+        "
