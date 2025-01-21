@@ -20,7 +20,7 @@ jobs:
 
     - name: Deploy to EC2
       env:
-        EC2_HOST: root@<EC2_PUBLIC_IP> # Replace with your EC2 public IP
+        EC2_HOST: root@35.176.70.5 # Replace with your EC2 public IP
       run: |
         ssh -o StrictHostKeyChecking=no $EC2_HOST "
         cd ~/project &&
