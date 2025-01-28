@@ -1,9 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, send_file
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
-from reports import reports_bp
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -16,7 +15,6 @@ db = SQLAlchemy(app)
 
 # Set timezone to Pakistan Standard Time (PST)
 pst = pytz.timezone('Asia/Karachi')
-app.register_blueprint(reports_bp, url_prefix='/reports')
 # Models
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -238,6 +236,49 @@ def revisions(client_id):
     
     return render_template('revisions.html', revisions=revisions, User=User)
 
+@app.route('/reports/report/<int:client_id>', methods=['GET'])
+def report_preview(client_id):
+    client = Client.query.get_or_404(client_id)
+    user = User.query.get(client.created_by)
+    report_data = {
+        "Client Name": client.client_name,
+        "Started On": client.contract_date.strftime('%Y-%m-%d'),
+        "Status/Completed On": client.deadline.strftime('%Y-%m-%d') if client.status == "Completed Contract" else client.status,
+        "Total Earning": f"{client.price} {client.currency}",
+        "Total Hours Worked": client.hours_worked if client.billing_type == "hourly" else "N/A",
+        "Upwork Account": client.upwork_account,
+        "Created By": user.username if user else "Unknown",
+        "Progress": client.progress,
+        "Description": client.description,
+    }
+    return render_template('report_preview.html', report_data=report_data)
+
+@app.route('/reports/report/download/<int:client_id>', methods=['GET'])
+def report_download(client_id):
+    client = Client.query.get_or_404(client_id)
+    user = User.query.get(client.created_by)
+    report_content = f"""
+    Client Report
+    -------------
+    Client Name: {client.client_name}
+    Started On: {client.contract_date.strftime('%Y-%m-%d')}
+    Status/Completed On: {client.deadline.strftime('%Y-%m-%d') if client.status == "Completed Contract" else client.status}
+    Total Earning: {client.price} {client.currency}
+    Total Hours Worked: {client.hours_worked if client.billing_type == "hourly" else "N/A"}
+    Upwork Account: {client.upwork_account}
+    Created By: {user.username if user else "Unknown"}
+    Progress: {client.progress}
+    Description: {client.description}
+    """
+    report_file = BytesIO()
+    report_file.write(report_content.encode('utf-8'))
+    report_file.seek(0)
+    return send_file(
+        report_file,
+        mimetype='text/plain',
+        as_attachment=True,
+        download_name=f"client_report_{client.client_no}.txt"
+    )
 
 # Create predefined users
 if __name__ == '__main__':
