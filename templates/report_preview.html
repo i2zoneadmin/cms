@@ -26,7 +26,7 @@
             </tbody>
         </table>
         <div class="actions">
-            <a href="{{ url_for('reports.report_download', client_id=report_data['Client Name']) }}" class="btn download-btn">Download Report</a>
+            <a href="{{ url_for('report_download', client_id=report_data['Client ID']) }}" class="btn download-btn">Download Report</a>
         </div>
     </div>
 </body>
