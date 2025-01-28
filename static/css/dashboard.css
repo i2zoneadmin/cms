@@ -95,14 +95,16 @@ td.expandable {
     position: relative;
     max-height: 1.5em; /* Limit to 1 line */
     overflow: hidden;
-    transition: max-height 0.3s ease-in-out;
+    transition: max-height 0.3s ease-in-out, white-space 0.3s ease-in-out;
+    text-overflow: ellipsis;
 }
 
 td.expandable.expanded {
-    max-height: none; /* Show full text */
+    max-height: none;
+    white-space: normal;
 }
 
-.read-more {
+.read-more-btn {
     color: #007BFF;
     cursor: pointer;
     font-size: 12px;

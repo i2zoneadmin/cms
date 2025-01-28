@@ -42,11 +42,21 @@
                     <td>{{ client.contract_date.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>{{ client.deadline.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>{{ client.status }}</td>
-                    <td class="ellipsis" data-full-text="{{ client.description }}">
-                        {{ client.description }}
+                    <td>
+                        <div class="expandable" id="desc-{{ client.client_no }}">
+                            {{ client.description }}
+                        </div>
+                        <span class="read-more-btn" onclick="toggleReadMore('desc-{{ client.client_no }}', this)">
+                            Read More
+                        </span>
                     </td>
-                    <td class="ellipsis" data-full-text="{{ client.progress }}">
-                        {{ client.progress }}
+                    <td>
+                        <div class="expandable" id="progress-{{ client.client_no }}">
+                            {{ client.progress }}
+                        </div>
+                        <span class="read-more-btn" onclick="toggleReadMore('progress-{{ client.client_no }}', this)">
+                            Read More
+                        </span>
                     </td>
                     <td>{{ client.upwork_account }}</td>
                     <td>{{ client.billing_type }}</td>
@@ -68,5 +78,13 @@
             </tbody>
         </table>
     </div>
+
+    <script>
+        function toggleReadMore(id, button) {
+            const element = document.getElementById(id);
+            element.classList.toggle('expanded');
+            button.textContent = element.classList.contains('expanded') ? 'Read Less' : 'Read More';
+        }
+    </script>
 </body>
 </html>
