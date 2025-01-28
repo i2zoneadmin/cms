@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
 from io import BytesIO
+from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -260,27 +261,29 @@ def report_preview(client_id):
 def report_download(client_id):
     client = Client.query.get_or_404(client_id)
     user = User.query.get(client.created_by)
-    report_content = f"""
-    Client Report
-    -------------
-    Client Name: {client.client_name}
-    Started On: {client.contract_date.strftime('%Y-%m-%d')}
-    Status/Completed On: {client.deadline.strftime('%Y-%m-%d') if client.status == "Completed Contract" else client.status}
-    Total Earning: {client.price} {client.currency}
-    Total Hours Worked: {client.hours_worked if client.billing_type == "hourly" else "N/A"}
-    Upwork Account: {client.upwork_account}
-    Created By: {user.username if user else "Unknown"}
-    Progress: {client.progress}
-    Description: {client.description}
-    """
+    
+    # Create a PDF in memory
     report_file = BytesIO()
-    report_file.write(report_content.encode('utf-8'))
+    pdf = canvas.Canvas(report_file)
+    pdf.drawString(100, 800, "Client Report")
+    pdf.drawString(100, 780, f"Client Name: {client.client_name}")
+    pdf.drawString(100, 760, f"Started On: {client.contract_date.strftime('%Y-%m-%d')}")
+    pdf.drawString(100, 740, f"Status/Completed On: {client.deadline.strftime('%Y-%m-%d') if client.status == 'Completed Contract' else client.status}")
+    pdf.drawString(100, 720, f"Total Earning: {client.price} {client.currency}")
+    pdf.drawString(100, 700, f"Total Hours Worked: {client.hours_worked if client.billing_type == 'hourly' else 'N/A'}")
+    pdf.drawString(100, 680, f"Upwork Account: {client.upwork_account}")
+    pdf.drawString(100, 660, f"Created By: {user.username if user else 'Unknown'}")
+    pdf.drawString(100, 640, f"Progress: {client.progress}")
+    pdf.drawString(100, 620, f"Description: {client.description}")
+    pdf.save()
+
+    # Prepare the file for download
     report_file.seek(0)
     return send_file(
         report_file,
-        mimetype='text/plain',
+        mimetype='application/pdf',
         as_attachment=True,
-        download_name=f"client_report_{client.client_no}.txt"
+        download_name=f"client_report_{client.client_no}.pdf"
     )
 
 # Create predefined users
