@@ -5,6 +5,7 @@ body {
     margin: 0;
     padding: 20px;
     text-align: center;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* Header */
@@ -33,7 +34,7 @@ a:hover {
 /* Table Container */
 table {
     width: 100%;
-    max-width: 100%;
+    max-width: 98%; /* Reduced the table width */
     border-collapse: collapse;
     margin: 0 auto;
     background: white;
@@ -46,7 +47,7 @@ table {
 th {
     background-color: #4CAF50;
     color: white;
-    padding: 12px;
+    padding: 8px; /* Reduced padding */
     text-align: center;
     font-weight: bold;
     position: sticky;
@@ -55,42 +56,12 @@ th {
 
 /* Table Rows */
 td {
-    padding: 10px;
+    padding: 6px; /* Reduced padding */
     text-align: center;
     border-bottom: 1px solid #ddd;
     vertical-align: top;
+    font-size: 12px; /* Reduced font size */
 }
-
-/* Expandable Text */
-td.expandable {
-    position: relative;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-height: 1.5em; /* Single-line height */
-    transition: max-height 0.3s ease-in-out, white-space 0.3s ease-in-out;
-}
-
-td.expandable.expanded {
-    max-height: none;
-    white-space: normal; /* Allow wrapping */
-}
-
-/* "Read More / Read Less" button */
-.read-more-btn {
-    color: #007BFF;
-    cursor: pointer;
-    font-size: 12px;
-    text-decoration: underline;
-    display: inline-block;
-    margin-top: 5px;
-    visibility: hidden; /* Default: hidden */
-}
-
-.read-more-btn.visible {
-    visibility: visible; /* Only visible for truncated content */
-}
-
 
 /* Alternating Row Colors */
 tr:nth-child(even) {
@@ -105,17 +76,18 @@ tr:hover {
 /* Actions Column - Buttons */
 td .action-buttons {
     display: flex;
-    gap: 5px; /* Reduced the space between buttons */
+    gap: 4px; /* Reduced gap between buttons */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
     justify-content: center;
 }
 
 .action-buttons a {
     text-decoration: none;
     color: white;
-    font-size: 12px;
+    font-size: 11px; /* Reduced font size */
     font-weight: bold;
-    padding: 8px 12px;
-    border-radius: 5px;
+    padding: 5px 8px; /* Reduced padding */
+    border-radius: 4px; /* Smaller rounded corners */
     transition: background-color 0.3s ease-in-out;
 }
 
@@ -151,7 +123,6 @@ td .action-buttons {
     background-color: #218838;
 }
 
-
 /* Responsive Table - Scrollable on Small Screens */
 @media screen and (max-width: 1024px) {
     table {
@@ -161,8 +132,8 @@ td .action-buttons {
     }
 
     th, td {
-        padding: 8px;
-        font-size: 14px;
+        padding: 6px;
+        font-size: 11px; /* Smaller font size */
     }
 }
 
@@ -172,14 +143,19 @@ td .action-buttons {
     }
 
     h1 {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     a {
-        font-size: 14px;
+        font-size: 12px;
     }
 
     th, td {
-        font-size: 12px;
+        font-size: 10px;
+    }
+
+    .action-buttons a {
+        padding: 4px 6px; /* Even smaller padding */
+        font-size: 10px;
     }
 }
