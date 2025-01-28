@@ -80,11 +80,30 @@
     </div>
 
     <script>
-        function toggleReadMore(id, button) {
-            const element = document.getElementById(id);
-            element.classList.toggle('expanded');
-            button.textContent = element.classList.contains('expanded') ? 'Read Less' : 'Read More';
-        }
+        document.addEventListener("DOMContentLoaded", () => {
+            const expandableCells = document.querySelectorAll("td.expandable");
+    
+            expandableCells.forEach(cell => {
+                const readMoreBtn = document.createElement("span");
+                readMoreBtn.textContent = "Read More";
+                readMoreBtn.classList.add("read-more-btn");
+    
+                // Check if content overflows
+                if (cell.scrollWidth > cell.clientWidth) {
+                    readMoreBtn.classList.add("visible");
+                    cell.parentNode.appendChild(readMoreBtn);
+                }
+    
+                // Toggle expanded/collapsed state
+                readMoreBtn.addEventListener("click", () => {
+                    cell.classList.toggle("expanded");
+                    readMoreBtn.textContent = cell.classList.contains("expanded")
+                        ? "Read Less"
+                        : "Read More";
+                });
+            });
+        });
     </script>
+    
 </body>
 </html>

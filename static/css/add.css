@@ -81,6 +81,37 @@ input[readonly] {
     cursor: not-allowed;
 }
 
+/* Expandable Text */
+td.expandable {
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* Ensure text truncates to one line */
+    max-height: 1.5em; /* Single-line height */
+    transition: max-height 0.3s ease-in-out, white-space 0.3s ease-in-out;
+}
+
+td.expandable.expanded {
+    white-space: normal; /* Allow multi-line */
+    max-height: none; /* Remove height restriction */
+}
+
+/* "Read More / Read Less" button */
+.read-more-btn {
+    color: #007BFF;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: underline;
+    display: inline-block;
+    margin-top: 5px;
+    visibility: hidden; /* Initially hidden */
+}
+
+.read-more-btn.visible {
+    visibility: visible; /* Show only when text is truncated */
+}
+
+
 /* Responsive Layout */
 @media (max-width: 768px) {
     form {
