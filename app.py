@@ -77,22 +77,40 @@ def add_client():
         return redirect(url_for('login'))
     if request.method == 'POST':
         client_name = request.form['client_name']
-        contract_date = datetime.strptime(request.form['contract_date'], '%Y-%m-%d').replace(tzinfo=pytz.utc)
-        deadline = datetime.strptime(request.form['deadline'], '%Y-%m-%d').replace(tzinfo=pytz.utc)
         status = request.form['status']
         description = request.form['description']
-        progress = request.form['progress']
         upwork_account = request.form['upwork_account']
         if upwork_account == 'Other':
             upwork_account = request.form['upwork_account_other']
-        billing_type = request.form['billing_type']
-        price = float(request.form['price'])
-        currency = request.form['currency']
 
-        # Ensure deadline is not in the past
-        current_time = datetime.now(pst).astimezone(pytz.utc)
-        if deadline < current_time:
-            return "Deadline cannot be in the past. Please choose a valid date."
+        # Validate fields based on status
+        if status in ["Active", "Required Critical Attention", "Completed Contract"]:
+            # Contract date and deadline are required for these statuses
+            try:
+                contract_date = datetime.strptime(request.form['contract_date'], '%Y-%m-%d').replace(tzinfo=pytz.utc)
+                deadline = datetime.strptime(request.form['deadline'], '%Y-%m-%d').replace(tzinfo=pytz.utc)
+
+                # Ensure deadline is not in the past
+                current_time = datetime.now(pst).astimezone(pytz.utc)
+                if deadline < current_time:
+                    return "Deadline cannot be in the past. Please choose a valid date."
+            except ValueError:
+                return "Please provide valid dates for Contract Date and Deadline."
+
+            progress = request.form['progress']
+            billing_type = request.form['billing_type']
+            price = float(request.form['price'])
+            currency = request.form['currency']
+        elif status in ["Under Discussion", "Contract Awaiting"]:
+            # Only allow client name, description, and upwork account to be set
+            contract_date = None
+            deadline = None
+            progress = ""
+            billing_type = ""
+            price = 0.0
+            currency = ""
+        else:
+            return "Invalid client status. Please select a valid status."
 
         # Automatically assign the next client number
         max_client_no = db.session.query(db.func.max(Client.client_no)).scalar() or 0
@@ -117,6 +135,7 @@ def add_client():
         return redirect(url_for('home'))
     return render_template('add_client.html')
 
+
 @app.route('/edit_client/<int:client_id>', methods=['GET', 'POST'])
 def edit_client(client_id):
     if 'user_id' not in session:
@@ -124,69 +143,78 @@ def edit_client(client_id):
     client = Client.query.get_or_404(client_id)
     if request.method == 'POST':
         changes = []
+        status = request.form['status']
 
-        # Update contract date
-        if client.contract_date.replace(tzinfo=pytz.utc) != datetime.strptime(request.form['contract_date'], '%Y-%m-%d').replace(tzinfo=pytz.utc):
-            changes.append(f"Contract Date changed from {client.contract_date.strftime('%Y-%m-%d')} to {request.form['contract_date']}")
-            client.contract_date = datetime.strptime(request.form['contract_date'], '%Y-%m-%d').replace(tzinfo=pytz.utc)
+        # Validate fields based on status
+        if status in ["Active", "Required Critical Attention", "Completed Contract"]:
+            # Update contract date
+            if client.contract_date.replace(tzinfo=pytz.utc) != datetime.strptime(request.form['contract_date'], '%Y-%m-%d').replace(tzinfo=pytz.utc):
+                changes.append(f"Contract Date changed from {client.contract_date.strftime('%Y-%m-%d')} to {request.form['contract_date']}")
+                client.contract_date = datetime.strptime(request.form['contract_date'], '%Y-%m-%d').replace(tzinfo=pytz.utc)
 
-        # Update deadline
-        if client.deadline.replace(tzinfo=pytz.utc) != datetime.strptime(request.form['deadline'], '%Y-%m-%d').replace(tzinfo=pytz.utc):
-            new_deadline = datetime.strptime(request.form['deadline'], '%Y-%m-%d').replace(tzinfo=pytz.utc)
-            current_time = datetime.now(pst).astimezone(pytz.utc)
-            if new_deadline < current_time:
-                return "Deadline cannot be in the past. Please choose a valid date."
-            changes.append(f"Deadline changed from {client.deadline.strftime('%Y-%m-%d')} to {request.form['deadline']}")
-            client.deadline = new_deadline
+            # Update deadline
+            if client.deadline.replace(tzinfo=pytz.utc) != datetime.strptime(request.form['deadline'], '%Y-%m-%d').replace(tzinfo=pytz.utc):
+                new_deadline = datetime.strptime(request.form['deadline'], '%Y-%m-%d').replace(tzinfo=pytz.utc)
+                current_time = datetime.now(pst).astimezone(pytz.utc)
+                if new_deadline < current_time:
+                    return "Deadline cannot be in the past. Please choose a valid date."
+                changes.append(f"Deadline changed from {client.deadline.strftime('%Y-%m-%d')} to {request.form['deadline']}")
+                client.deadline = new_deadline
+
+            # Update progress
+            if client.progress != request.form['progress']:
+                changes.append(f"Progress changed from {client.progress} to {request.form['progress']}")
+                client.progress = request.form['progress']
+
+            # Update billing type
+            billing_type = request.form.get('billing_type', client.billing_type)
+            if client.billing_type != billing_type:
+                changes.append(f"Billing Type changed from {client.billing_type} to {billing_type}")
+                client.billing_type = billing_type
+
+            # Update price
+            price = float(request.form.get('price', client.price))
+            if client.price != price:
+                changes.append(f"Price changed from {client.price} to {price}")
+                client.price = price
+
+            # Update currency
+            currency = request.form.get('currency', client.currency)
+            if client.currency != currency:
+                changes.append(f"Currency changed from {client.currency} to {currency}")
+                client.currency = currency
+
+            # Update hours worked for hourly clients
+            if client.billing_type == 'hourly':
+                additional_hours = float(request.form.get('hours_worked', 0))
+                if additional_hours > 0:
+                    new_total_hours = client.hours_worked + additional_hours
+                    changes.append(f"Hours Worked updated from {client.hours_worked} to {new_total_hours}")
+                    client.hours_worked = new_total_hours
+
+        elif status in ["Under Discussion", "Contract Awaiting"]:
+            # Only allow client name, description, and upwork account to be updated
+            if client.client_name != request.form['client_name']:
+                changes.append(f"Client Name changed from {client.client_name} to {request.form['client_name']}")
+                client.client_name = request.form['client_name']
+
+            if client.description != request.form['description']:
+                changes.append("Description changed")
+                client.description = request.form['description']
+
+            upwork_account = request.form.get('upwork_account', client.upwork_account)
+            if upwork_account == 'Other':
+                upwork_account = request.form.get('upwork_account_other', client.upwork_account)
+            if client.upwork_account != upwork_account:
+                changes.append(f"Upwork Account changed from {client.upwork_account} to {upwork_account}")
+                client.upwork_account = upwork_account
+        else:
+            return "Invalid status value. Please select a valid status."
 
         # Update status
-        if client.status != request.form['status']:
-            changes.append(f"Status changed from {client.status} to {request.form['status']}")
-            client.status = request.form['status']
-
-        # Update description
-        if client.description != request.form['description']:
-            changes.append("Description changed")
-            client.description = request.form['description']
-
-        # Update progress
-        if client.progress != request.form['progress']:
-            changes.append(f"Progress changed from {client.progress} to {request.form['progress']}")
-            client.progress = request.form['progress']
-
-        # Update upwork account
-        upwork_account = request.form.get('upwork_account', client.upwork_account)
-        if upwork_account == 'Other':
-            upwork_account = request.form.get('upwork_account_other', client.upwork_account)
-        if client.upwork_account != upwork_account:
-            changes.append(f"Upwork Account changed from {client.upwork_account} to {upwork_account}")
-            client.upwork_account = upwork_account
-
-        # Update billing type
-        billing_type = request.form.get('billing_type', client.billing_type)
-        if client.billing_type != billing_type:
-            changes.append(f"Billing Type changed from {client.billing_type} to {billing_type}")
-            client.billing_type = billing_type
-
-        # Update price
-        price = float(request.form.get('price', client.price))
-        if client.price != price:
-            changes.append(f"Price changed from {client.price} to {price}")
-            client.price = price
-
-        # Update currency
-        currency = request.form.get('currency', client.currency)
-        if client.currency != currency:
-            changes.append(f"Currency changed from {client.currency} to {currency}")
-            client.currency = currency
-
-        # Update hours worked for hourly clients
-        if client.billing_type == 'hourly':
-            additional_hours = float(request.form.get('hours_worked', 0))
-            if additional_hours > 0:
-                new_total_hours = client.hours_worked + additional_hours
-                changes.append(f"Hours Worked updated from {client.hours_worked} to {new_total_hours}")
-                client.hours_worked = new_total_hours
+        if client.status != status:
+            changes.append(f"Status changed from {client.status} to {status}")
+            client.status = status
 
         # Save changes and create a revision
         if changes:

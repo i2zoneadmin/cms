@@ -10,32 +10,32 @@
     <h1>Add Client</h1>
     <form method="POST">
         <label for="client_name">Client Name:</label>
-        <input type="text" name="client_name" required>
+        <input type="text" name="client_name" id="client_name" required>
 
         <label for="contract_date">Contract Date:</label>
-        <input type="date" name="contract_date" required>
+        <input type="date" name="contract_date" id="contract_date" required>
 
         <label for="deadline">Deadline:</label>
-        <input type="date" name="deadline" required>
+        <input type="date" name="deadline" id="deadline" required>
 
         <label for="status">Status:</label>
-        <select name="status" required>
+        <select name="status" id="status" onchange="toggleFields()" required>
             <option value="Under Discussion">Under Discussion</option>
             <option value="Contract Awaiting">Contract Awaiting</option>
             <option value="Active">Active</option>
-            <option value="Require Critical Attention">Require Critical Attention</option>
+            <option value="Required Critical Attention">Required Critical Attention</option>
             <option value="Completed Contract">Completed Contract</option>
             <option value="Closed">Closed</option>
         </select>
 
         <label for="description">Description:</label>
-        <textarea name="description" rows="4" required></textarea>
+        <textarea name="description" id="description" rows="4" required></textarea>
 
         <label for="progress">Progress:</label>
-        <input type="text" name="progress" required>
+        <input type="text" name="progress" id="progress" required>
 
         <label for="upwork_account">Upwork Account:</label>
-        <select name="upwork_account" onchange="toggleUpworkField(this)" required>
+        <select name="upwork_account" id="upwork_account" onchange="toggleUpworkField(this)" required>
             <option value="Zain's">Zain's</option>
             <option value="Hammad's">Hammad's</option>
             <option value="Rizwan's">Rizwan's</option>
@@ -50,10 +50,10 @@
         </select>
 
         <label id="price_label" for="price">Total Cost:</label>
-        <input type="number" step="0.01" name="price" required>
+        <input type="number" step="0.01" name="price" id="price" required>
 
         <label for="currency">Currency:</label>
-        <select name="currency" required>
+        <select name="currency" id="currency" required>
             <option value="USD">Dollar (USD)</option>
             <option value="EUR">Euro (EUR)</option>
             <option value="GBP">Pound (GBP)</option>
@@ -72,7 +72,29 @@
             document.getElementById('price_label').innerText =
                 billingType === 'hourly' ? 'Rate Per Hour:' : 'Total Cost:';
         }
+
+        function toggleFields() {
+            const status = document.getElementById('status').value;
+
+            // Enable/Disable fields based on status
+            const isEditable = ["Active", "Required Critical Attention", "Completed Contract"].includes(status);
+            const isLimited = ["Under Discussion", "Contract Awaiting"].includes(status);
+
+            document.getElementById('contract_date').disabled = !isEditable;
+            document.getElementById('deadline').disabled = !isEditable;
+            document.getElementById('progress').disabled = !isEditable;
+            document.getElementById('billing_type').disabled = !isEditable;
+            document.getElementById('price').disabled = !isEditable;
+            document.getElementById('currency').disabled = !isEditable;
+
+            // For limited statuses, keep only certain fields editable
+            document.getElementById('client_name').disabled = !(isLimited || isEditable);
+            document.getElementById('description').disabled = !(isLimited || isEditable);
+            document.getElementById('upwork_account').disabled = !(isLimited || isEditable);
+        }
+
+        // Initialize fields on page load
+        document.addEventListener('DOMContentLoaded', toggleFields);
     </script>
 </body>
 </html>
-
