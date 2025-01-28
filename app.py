@@ -242,12 +242,25 @@ def revisions(client_id):
 def report_preview(client_id):
     client = Client.query.get_or_404(client_id)
     user = User.query.get(client.created_by)
+    
+    if client.billing_type == "hourly":
+        # For hourly projects, calculate total earning based on hours worked
+        total_earning = client.hours_worked * client.price
+    elif client.status in ["Active", "Required Critical Attention"]:
+        # For project-based contracts in progress, show "Expected Earning"
+        total_earning = f"Expected Earning: {client.price} {client.currency}"
+    elif client.status in ["Completed Contract", "Closed"]:
+        # For completed project-based contracts, total earning is the price
+        total_earning = f"{client.price} {client.currency}"
+    else:
+        total_earning = "N/A"
+    
     report_data = {
-        "Client ID": client.id,  # Include Client ID
+        "Client ID": client.id,
         "Client Name": client.client_name,
         "Started On": client.contract_date.strftime('%Y-%m-%d'),
         "Status/Completed On": client.deadline.strftime('%Y-%m-%d') if client.status == "Completed Contract" else client.status,
-        "Total Earning": f"{client.price} {client.currency}",
+        "Total Earning": total_earning,
         "Total Hours Worked": client.hours_worked if client.billing_type == "hourly" else "N/A",
         "Upwork Account": client.upwork_account,
         "Created By": user.username if user else "Unknown",
@@ -262,6 +275,15 @@ def report_download(client_id):
     client = Client.query.get_or_404(client_id)
     user = User.query.get(client.created_by)
     
+    if client.billing_type == "hourly":
+        total_earning = client.hours_worked * client.price
+    elif client.status in ["Active", "Required Critical Attention"]:
+        total_earning = f"Expected Earning: {client.price} {client.currency}"
+    elif client.status in ["Completed Contract", "Closed"]:
+        total_earning = f"{client.price} {client.currency}"
+    else:
+        total_earning = "N/A"
+
     # Create a PDF in memory
     report_file = BytesIO()
     pdf = canvas.Canvas(report_file)
@@ -269,7 +291,7 @@ def report_download(client_id):
     pdf.drawString(100, 780, f"Client Name: {client.client_name}")
     pdf.drawString(100, 760, f"Started On: {client.contract_date.strftime('%Y-%m-%d')}")
     pdf.drawString(100, 740, f"Status/Completed On: {client.deadline.strftime('%Y-%m-%d') if client.status == 'Completed Contract' else client.status}")
-    pdf.drawString(100, 720, f"Total Earning: {client.price} {client.currency}")
+    pdf.drawString(100, 720, f"Total Earning: {total_earning}")
     pdf.drawString(100, 700, f"Total Hours Worked: {client.hours_worked if client.billing_type == 'hourly' else 'N/A'}")
     pdf.drawString(100, 680, f"Upwork Account: {client.upwork_account}")
     pdf.drawString(100, 660, f"Created By: {user.username if user else 'Unknown'}")
