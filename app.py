@@ -241,6 +241,7 @@ def report_preview(client_id):
     client = Client.query.get_or_404(client_id)
     user = User.query.get(client.created_by)
     report_data = {
+        "Client ID": client.id,  # Include Client ID
         "Client Name": client.client_name,
         "Started On": client.contract_date.strftime('%Y-%m-%d'),
         "Status/Completed On": client.deadline.strftime('%Y-%m-%d') if client.status == "Completed Contract" else client.status,
@@ -252,6 +253,7 @@ def report_preview(client_id):
         "Description": client.description,
     }
     return render_template('report_preview.html', report_data=report_data)
+
 
 @app.route('/reports/report/download/<int:client_id>', methods=['GET'])
 def report_download(client_id):
