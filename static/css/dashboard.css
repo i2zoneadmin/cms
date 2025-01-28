@@ -60,13 +60,13 @@ td {
     border-bottom: 1px solid #ddd;
 }
 
-/* Ellipsis for Long Text */
+/* Tooltip for Long Text */
 td.ellipsis {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 200px;
-    font-size: 14px; /* Slightly smaller font for long text */
+    font-size: 14px;
     position: relative;
     cursor: pointer;
 }
@@ -81,11 +81,34 @@ td.ellipsis:hover::after {
     white-space: normal;
     font-size: 12px;
     top: 100%;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 10;
     width: max-content;
     max-width: 400px;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+    text-align: left;
+}
+
+/* Expandable Text */
+td.expandable {
+    position: relative;
+    max-height: 1.5em; /* Limit to 1 line */
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out;
+}
+
+td.expandable.expanded {
+    max-height: none; /* Show full text */
+}
+
+.read-more {
+    color: #007BFF;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: underline;
+    display: inline-block;
+    margin-top: 5px;
 }
 
 /* Alternating Row Colors */
