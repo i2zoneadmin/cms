@@ -64,18 +64,19 @@ td {
 /* Expandable Text */
 td.expandable {
     position: relative;
-    max-height: 1.5em; /* Limit to 1 line */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-height: 1.5em; /* Single-line height */
     transition: max-height 0.3s ease-in-out, white-space 0.3s ease-in-out;
 }
 
 td.expandable.expanded {
     max-height: none;
-    white-space: normal;
+    white-space: normal; /* Allow wrapping */
 }
 
+/* "Read More / Read Less" button */
 .read-more-btn {
     color: #007BFF;
     cursor: pointer;
@@ -83,7 +84,13 @@ td.expandable.expanded {
     text-decoration: underline;
     display: inline-block;
     margin-top: 5px;
+    visibility: hidden; /* Default: hidden */
 }
+
+.read-more-btn.visible {
+    visibility: visible; /* Only visible for truncated content */
+}
+
 
 /* Alternating Row Colors */
 tr:nth-child(even) {
@@ -121,7 +128,7 @@ td .action-buttons {
 }
 
 .action-buttons a.revisions {
-    background-color: #FFC107;
+    background-color: #635b46;
 }
 
 .action-buttons a.revisions:hover {
