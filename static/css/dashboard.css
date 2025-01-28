@@ -60,7 +60,7 @@ td {
     border-bottom: 1px solid #ddd;
 }
 
-/* Tooltip for Long Text */
+/* Tooltip for Full Text */
 td.ellipsis {
     white-space: nowrap;
     overflow: hidden;
