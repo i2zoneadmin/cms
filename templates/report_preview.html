@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Report</title>
+    <link rel="stylesheet" href="/static/css/report.css">
+</head>
+<body>
+    <div class="report-container">
+        <h1>Client Report</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, value in report_data.items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="actions">
+            <a href="{{ url_for('reports.report_download', client_id=report_data['Client Name']) }}" class="btn download-btn">Download Report</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
+from reports import reports_bp
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -15,7 +16,7 @@ db = SQLAlchemy(app)
 
 # Set timezone to Pakistan Standard Time (PST)
 pst = pytz.timezone('Asia/Karachi')
-
+app.register_blueprint(reports_bp, url_prefix='/reports')
 # Models
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
