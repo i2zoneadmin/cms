@@ -109,8 +109,8 @@
                     <td>{{ client.contract_date.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>{{ client.deadline.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>{{ client.status }}</td>
-                    <td>{{ client.description }}</td>
-                    <td>{{ client.progress }}</td>
+                    <td class="ellipsis" data-full-text="{{ client.description }}">{{ client.description }}</td>
+                    <td class="ellipsis" data-full-text="{{ client.progress }}">{{ client.progress }}</td>
                     <td>{{ client.upwork_account }}</td>
                     <td>{{ client.billing_type }}</td>
                     <td>{{ client.price }}</td>
@@ -133,4 +133,5 @@
     </div>
 </body>
 </html>
+
 
