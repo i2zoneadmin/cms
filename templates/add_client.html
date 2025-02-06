@@ -12,12 +12,6 @@
         <label for="client_name">Client Name:</label>
         <input type="text" name="client_name" id="client_name" required>
 
-        <label for="contract_date">Contract Date:</label>
-        <input type="date" name="contract_date" id="contract_date" required>
-
-        <label for="deadline">Deadline:</label>
-        <input type="date" name="deadline" id="deadline" required>
-
         <label for="status">Status:</label>
         <select name="status" id="status" onchange="toggleFields()" required>
             <option value="Under Discussion">Under Discussion</option>
@@ -30,6 +24,12 @@
 
         <label for="description">Description:</label>
         <textarea name="description" id="description" rows="4" required></textarea>
+
+        <label for="contract_date">Contract Date:</label>
+        <input type="date" name="contract_date" id="contract_date" required>
+
+        <label for="deadline">Deadline:</label>
+        <input type="date" name="deadline" id="deadline" required>
 
         <label for="progress">Progress:</label>
         <input type="text" name="progress" id="progress" required>
