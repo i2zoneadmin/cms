@@ -352,12 +352,13 @@ def add_finance():
         last_finance = Finance.query.order_by(Finance.id.desc()).first()
         last_balance = last_finance.balance if last_finance else 0.0
 
-        # Fetch form data
+        # Fetch form data safely
         transaction_type = request.form['transaction_type']
         amount = float(request.form['amount'])
         debit_type = request.form.get('debit_type', None)  # expense or partner_payment
         partner_paid_to = request.form.get('partner_paid_to', None)
-        
+        recipient = request.form.get('recipient', None)  # Optional for partner_payment
+
         # Calculate the new overall company balance
         new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
 
@@ -383,9 +384,9 @@ def add_finance():
             amount=amount,
             currency=request.form['currency'],
             purpose=request.form['purpose'],
-            recipient=request.form['recipient'],
+            recipient=recipient,  # May be None for partner payments
             paid_by=request.form['paid_by'],
-            settled=request.form.get('settled') == 'on',
+            settled=request.form.get('settled') == '1',
             transaction_type=transaction_type,
             debit_type=debit_type,
             partner_paid_to=partner_paid_to,
