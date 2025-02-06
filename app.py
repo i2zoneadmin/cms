@@ -47,13 +47,14 @@ class Revision(db.Model):
     change_date = db.Column(db.DateTime, default=lambda: datetime.now(pst))
     changes = db.Column(db.Text, nullable=False)
 
-# Routes
 @app.route('/')
 def home():
     if 'user_id' in session:
         clients = Client.query.order_by(Client.client_no).all()
-        return render_template('dashboard.html', clients=clients, User=User)
+        finances = Finance.query.all()  # Fetch finance data from the database
+        return render_template('dashboard.html', clients=clients, finances=finances, User=User)
     return redirect(url_for('login'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
