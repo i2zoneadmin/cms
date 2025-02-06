@@ -48,19 +48,13 @@ class Revision(db.Model):
     change_date = db.Column(db.DateTime, default=lambda: datetime.now(pst))
     changes = db.Column(db.Text, nullable=False)
 
-@app.route('/', endpoint='dashboard')
+@app.route('/')
 def home():
     if 'user_id' in session:
         clients = Client.query.order_by(Client.client_no).all()
         finances = Finance.query.all()  # Fetch finance data from the database
-        partner_balances = PartnerBalance.query.all()  # Fetch partner balances
-        return render_template(
-            'dashboard.html', 
-            clients=clients, 
-            finances=finances, 
-            partner_balances=partner_balances, 
-            User=User
-        )
+        partner_balances = PartnerBalance.query.all()
+        return render_template('dashboard.html', clients=clients, partner_balances=partner_balances, finances=finances, User=User)
     return redirect(url_for('login'))
 
 
