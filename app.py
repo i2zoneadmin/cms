@@ -321,11 +321,19 @@ class Finance(db.Model):
     currency = db.Column(db.String(10), nullable=False)
     purpose = db.Column(db.String(255), nullable=False)
     date_added = db.Column(db.DateTime, default=lambda: datetime.now(pst))
-    recipient = db.Column(db.String(100), nullable=False)
+    recipient = db.Column(db.String(100), nullable=True)  # For partner payments
     paid_by = db.Column(db.String(100), nullable=False)
     settled = db.Column(db.Boolean, default=False)
     transaction_type = db.Column(db.String(10), nullable=False)  # "debit" or "credit"
+    debit_type = db.Column(db.String(20), nullable=True)  # "expense" or "partner_payment"
+    partner_paid_to = db.Column(db.String(100), nullable=True)  # For partner payments
     balance = db.Column(db.Float, nullable=False, default=0.0)  # Running balance
+
+
+class PartnerBalance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    partner_name = db.Column(db.String(100), unique=True, nullable=False)
+    balance = db.Column(db.Float, nullable=False, default=0.0)
 
 
 class FinanceRevision(db.Model):
@@ -335,13 +343,6 @@ class FinanceRevision(db.Model):
     change_date = db.Column(db.DateTime, default=lambda: datetime.now(pst))
     changes = db.Column(db.Text, nullable=False)
 
-# @app.route('/finance')
-# def finance_dashboard():
-#     if 'user_id' not in session:
-#         return redirect(url_for('login'))
-#     finances = Finance.query.all()
-#     return render_template('finance_dashboard.html', finances=finances)
-
 @app.route('/finance/add', methods=['GET', 'POST'])
 def add_finance():
     if 'user_id' not in session:
@@ -350,48 +351,84 @@ def add_finance():
     if request.method == 'POST':
         # Fetch the last balance
         last_finance = Finance.query.order_by(Finance.id.desc()).first()
-        total_balance = last_finance.balance if last_finance else 0.0
+        last_balance = last_finance.balance if last_finance else 0.0
 
+        # Fetch form data
         transaction_type = request.form['transaction_type']
         amount = float(request.form['amount'])
-        reason = request.form['reason']
-        recipient = request.form.get('recipient', None)
+        debit_type = request.form.get('debit_type', None)  # expense or partner_payment
+        partner_paid_to = request.form.get('partner_paid_to', None)
+        
+        # Calculate new balance
+        new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
 
+        # Handle partner payment logic
+        if transaction_type == 'debit' and debit_type == 'partner_payment':
+            partner = PartnerBalance.query.filter_by(partner_name=partner_paid_to).first()
+            if not partner or partner.balance < amount:
+                flash(f"Error: Insufficient balance for {partner_paid_to}", "danger")
+                return redirect(url_for('add_finance'))
+            partner.balance -= amount  # Deduct from partner's share
+            db.session.add(partner)
+
+        # Handle credit (income) or expense logic
         if transaction_type == 'credit':
-            new_balance = total_balance + amount
-            share = amount / 3
-            for user in ['Zain', 'Hammad', 'Rizwan']:
-                personal_balance = PersonalBalance.query.filter_by(user_id=user.id).first()
-                personal_balance.personal_balance += share
-                db.session.add(personal_balance)
+            for partner in PartnerBalance.query.all():
+                partner.balance += amount / 3  # Distribute equally among partners
+                db.session.add(partner)
+        elif transaction_type == 'debit' and debit_type == 'expense':
+            pass  # Company expense does not affect partner shares
 
-        elif transaction_type == 'company_expense':
-            new_balance = total_balance - amount
-
-        elif transaction_type == 'personal_payment':
-            personal_balance = PersonalBalance.query.filter_by(user_id=recipient.id).first()
-            if personal_balance.personal_balance < amount:
-                return "Error: Insufficient balance for this payment."
-            personal_balance.personal_balance -= amount
-            new_balance = total_balance - amount
-            db.session.add(personal_balance)
-
-        # Add the transaction
+        # Create finance entry
         finance = Finance(
             added_by=session['user_id'],
             amount=amount,
-            transaction_type=transaction_type,
             currency=request.form['currency'],
-            reason=reason,
-            recipient=recipient,
-            settled=False,
-            balance=new_balance
+            purpose=request.form['purpose'],
+            recipient=request.form['recipient'],
+            paid_by=request.form['paid_by'],
+            settled=request.form.get('settled') == 'on',
+            transaction_type=transaction_type,
+            debit_type=debit_type,
+            partner_paid_to=partner_paid_to,
+            balance=new_balance,
         )
         db.session.add(finance)
         db.session.commit()
 
         return redirect(url_for('home'))
-    return render_template('add_finance.html')
+    
+    return render_template('add_finance.html', partners=PartnerBalance.query.all())
+
+# @app.route('/finance/add', methods=['GET', 'POST'])
+# def add_finance():
+#     if 'user_id' not in session:
+#         return redirect(url_for('login'))
+#     if request.method == 'POST':
+#         # Fetch the last balance
+#         last_finance = Finance.query.order_by(Finance.id.desc()).first()
+#         last_balance = last_finance.balance if last_finance else 0.0
+
+#         # Determine new balance based on transaction type
+#         transaction_type = request.form['transaction_type']
+#         amount = float(request.form['amount'])
+#         new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
+
+#         finance = Finance(
+#             added_by=session['user_id'],
+#             amount=amount,
+#             currency=request.form['currency'],
+#             purpose=request.form['purpose'],
+#             recipient=request.form['recipient'],
+#             paid_by=request.form['paid_by'],
+#             settled=request.form.get('settled') == 'on',
+#             transaction_type=transaction_type,
+#             balance=new_balance
+#         )
+#         db.session.add(finance)
+#         db.session.commit()
+#         return redirect(url_for('home'))  # Redirect to the unified dashboard
+#     return render_template('add_finance.html')
 
 
 @app.route('/finance/edit/<int:finance_id>', methods=['GET', 'POST'])

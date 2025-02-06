@@ -109,5 +109,24 @@
             </tbody>
         </table>
     </div>
+    <div class="table-container">
+        <h2>Partner Balances</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Partner Name</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for partner in partners %}
+                <tr>
+                    <td>{{ partner.partner_name }}</td>
+                    <td>{{ partner.balance }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>    
 </body>
 </html>
