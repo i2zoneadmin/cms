@@ -377,11 +377,16 @@ def add_finance():
 def edit_finance(finance_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     finance = Finance.query.get_or_404(finance_id)
     if request.method == 'POST':
         changes = []
 
-        # Update amount or transaction type
+        # Get previous values
+        old_amount = finance.amount
+        old_transaction_type = finance.transaction_type
+
+        # Get new values from the form
         new_transaction_type = request.form['transaction_type']
         new_amount = float(request.form['amount'])
 
@@ -392,7 +397,13 @@ def edit_finance(finance_id):
         # Recalculate this entry's balance
         new_balance = prev_balance + new_amount if new_transaction_type == 'credit' else prev_balance - new_amount
 
-        # Update this entry
+        # Record changes
+        if old_amount != new_amount:
+            changes.append(f"Amount changed from {old_amount} to {new_amount}")
+        if old_transaction_type != new_transaction_type:
+            changes.append(f"Transaction Type changed from {old_transaction_type} to {new_transaction_type}")
+
+        # Update the finance entry
         finance.amount = new_amount
         finance.transaction_type = new_transaction_type
         finance.balance = new_balance
@@ -401,13 +412,23 @@ def edit_finance(finance_id):
         subsequent_finances = Finance.query.filter(Finance.id > finance.id).order_by(Finance.id.asc()).all()
         for subsequent_finance in subsequent_finances:
             if subsequent_finance.transaction_type == 'credit':
-                subsequent_finance.balance = subsequent_finance.balance - finance.amount + new_amount
+                subsequent_finance.balance = subsequent_finance.balance - old_amount + new_amount
             else:
-                subsequent_finance.balance = subsequent_finance.balance + finance.amount - new_amount
+                subsequent_finance.balance = subsequent_finance.balance + old_amount - new_amount
             db.session.add(subsequent_finance)
 
+        # Add a revision record
+        if changes:
+            revision = FinanceRevision(
+                finance_id=finance.id,
+                changed_by=session['user_id'],
+                changes='; '.join(changes)
+            )
+            db.session.add(revision)
+
         db.session.commit()
-        return redirect(url_for('home'))  # Redirect to the unified dashboard
+        return redirect(url_for('home'))  # Redirect to the dashboard
+
     return render_template('edit_finance.html', finance=finance)
 
 
