@@ -359,15 +359,27 @@ def add_finance():
         partner_paid_to = request.form.get('partner_paid_to', None)
 
         # Calculate new balance
-        new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
+        if transaction_type == 'credit':
+            new_balance = last_balance + amount
+        elif transaction_type == 'debit':
+            new_balance = last_balance - amount
+        else:
+            flash("Invalid transaction type.", "danger")
+            return redirect(url_for('add_finance'))
 
         # Handle partner payment logic
         if transaction_type == 'debit' and debit_type == 'partner_payment':
             partner = PartnerBalance.query.filter_by(partner_name=partner_paid_to).first()
-            if not partner or partner.balance < amount:
-                flash(f"Error: Insufficient balance for {partner_paid_to}", "danger")
+            if not partner:
+                flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
                 return redirect(url_for('add_finance'))
-            partner.balance -= amount  # Deduct from partner's share
+
+            if partner.balance < amount:
+                flash(f"Error: Insufficient balance for {partner_paid_to}.", "danger")
+                return redirect(url_for('add_finance'))
+
+            # Deduct from the partner's share
+            partner.balance -= amount
             db.session.add(partner)
 
         # Handle credit (income) or expense logic
@@ -395,6 +407,7 @@ def add_finance():
         db.session.add(finance)
         db.session.commit()
 
+        flash("Finance record added successfully!", "success")
         return redirect(url_for('home'))
     
     return render_template('add_finance.html', partners=PartnerBalance.query.all())
