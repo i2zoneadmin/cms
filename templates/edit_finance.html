@@ -9,8 +9,17 @@
         function toggleRecipientField() {
             const transactionType = document.querySelector('select[name="transaction_type"]').value;
             const recipientField = document.querySelector('input[name="recipient"]');
-            recipientField.disabled = transactionType === 'credit';
+            const hiddenRecipientField = document.querySelector('input[name="hidden_recipient"]');
+            
+            if (transactionType === 'credit') {
+                recipientField.disabled = true;
+                hiddenRecipientField.value = recipientField.value; // Save the value in a hidden input
+            } else {
+                recipientField.disabled = false;
+                hiddenRecipientField.value = ""; // Clear the hidden value
+            }
         }
+
         window.onload = toggleRecipientField; // Ensure the state is updated on page load
     </script>
 </head>
@@ -39,6 +48,7 @@
         
         <label>Recipient:</label>
         <input type="text" name="recipient" value="{{ finance.recipient }}" required>
+        <input type="hidden" name="hidden_recipient" value="{{ finance.recipient }}"> <!-- Hidden input -->
         
         <label>Paid By:</label>
         <select name="paid_by" required>
