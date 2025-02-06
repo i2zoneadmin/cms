@@ -407,7 +407,7 @@ def edit_finance(finance_id):
             finance.currency = new_currency
 
         # Check and update the recipient
-        new_recipient = request.form['recipient']
+        new_recipient = request.form.get('recipient') or request.form.get('hidden_recipient')  # Updated line
         if finance.recipient != new_recipient:
             changes.append(f"Recipient changed from {finance.recipient} to {new_recipient}")
             finance.recipient = new_recipient
