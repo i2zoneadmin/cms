@@ -374,11 +374,18 @@ def add_finance():
         # Handle debit logic
         elif transaction_type == 'debit':
             if debit_type == 'partner_payment':
+                # Clean up the partner name to avoid case sensitivity or whitespace issues
+                partner_paid_to = partner_paid_to.strip() if partner_paid_to else None
+
                 # Check if the partner exists
-                partner = PartnerBalance.query.filter_by(partner_name=partner_paid_to).first()
+                partner = PartnerBalance.query.filter(
+                    PartnerBalance.partner_name.ilike(partner_paid_to)
+                ).first()
+
                 if not partner:
                     flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
                     return redirect(url_for('add_finance'))
+
 
                 # Check if the partner has sufficient balance
                 if partner.balance < amount:
