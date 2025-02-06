@@ -455,7 +455,7 @@ def finance_revisions(finance_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     revisions = FinanceRevision.query.filter_by(finance_id=finance_id).all()
-    return render_template('revisions_finance.html', revisions=revisions)
+    return render_template('revisions_finance.html', revisions=revisions, User=User)
 
 
 # Create predefined users
