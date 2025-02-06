@@ -348,35 +348,43 @@ def add_finance():
         return redirect(url_for('login'))
     
     if request.method == 'POST':
-        # Fetch the last balance (overall company balance)
+        # Fetch the last balance
         last_finance = Finance.query.order_by(Finance.id.desc()).first()
         last_balance = last_finance.balance if last_finance else 0.0
 
-        # Fetch form data safely
+        # Fetch form data
         transaction_type = request.form['transaction_type']
         amount = float(request.form['amount'])
         debit_type = request.form.get('debit_type', None)  # expense or partner_payment
         partner_paid_to = request.form.get('partner_paid_to', None)
-        recipient = request.form.get('recipient', None)  # Optional for partner_payment
+        recipient = request.form.get('recipient', None)
 
-        # Calculate the new overall company balance
-        new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
-
-        # Handle partner payment logic
-        if transaction_type == 'debit' and debit_type == 'partner_payment':
-            partner_share = last_balance / 3  # Each partner's share of the total balance
-
-            if not partner_paid_to:
-                flash("Error: No partner selected for payment.", "danger")
-                return redirect(url_for('add_finance'))
-
-            if amount > partner_share:
-                flash(f"Error: Insufficient balance for {partner_paid_to}. Maximum available: {partner_share:.2f}", "danger")
-                return redirect(url_for('add_finance'))
-
-        # Handle credit (income) logic
+        # Handle credit transactions
         if transaction_type == 'credit':
-            pass  # Distribute equally among partners if required.
+            # Distribute equally among partners
+            for partner in PartnerBalance.query.all():
+                partner.balance += amount / 3
+                db.session.add(partner)
+            new_balance = last_balance + amount
+
+        # Handle debit transactions
+        elif transaction_type == 'debit':
+            if debit_type == 'partner_payment':
+                # Validate partner payment logic
+                partner = PartnerBalance.query.filter_by(partner_name=partner_paid_to).first()
+                if not partner:
+                    flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
+                    return redirect(url_for('add_finance'))
+                if partner.balance < amount:
+                    flash(f"Error: Insufficient balance for {partner_paid_to}. Maximum available: {partner.balance:.2f}", "danger")
+                    return redirect(url_for('add_finance'))
+
+                # Deduct from the specific partner's share
+                partner.balance -= amount
+                db.session.add(partner)
+
+            # Deduct the amount from the total balance for both partner payments and expenses
+            new_balance = last_balance - amount
 
         # Create finance entry
         finance = Finance(
