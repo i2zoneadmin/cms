@@ -428,9 +428,11 @@ def add_finance():
         db.session.commit()
 
         flash("Finance record added successfully.", "success")
-        return redirect(url_for('home'))  # Use 'home' instead of 'dashboard'
+        return redirect(url_for('home'))
 
-    return render_template('add_finance.html', partners=['Zain', 'Hammad', 'Rizwan'])
+    # Update to fetch partners dynamically
+    partners = PartnerBalance.query.all()  # Correctly fetch from database
+    return render_template('add_finance.html', partners=partners)
 
 
 
