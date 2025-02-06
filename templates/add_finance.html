@@ -9,46 +9,57 @@
         function toggleRecipientField() {
             const transactionType = document.querySelector('select[name="transaction_type"]').value;
             const recipientField = document.querySelector('input[name="recipient"]');
-            recipientField.disabled = transactionType === 'credit';
+            const paidByField = document.querySelector('select[name="paid_by"]');
+
+            if (transactionType === 'credit') {
+                recipientField.value = "";
+                recipientField.disabled = true;
+                paidByField.disabled = true;
+            } else {
+                recipientField.disabled = false;
+                paidByField.disabled = false;
+            }
         }
+
+        window.onload = toggleRecipientField; // Ensure the state is updated on page load
     </script>
 </head>
 <body>
     <h1>Add Finance Record</h1>
     <form action="/finance/add" method="POST">
-        <label>Amount:</label>
-        <input type="number" name="amount" required>
+        <label for="amount">Amount:</label>
+        <input type="number" name="amount" id="amount" required>
         
-        <label>Currency:</label>
-        <select name="currency" required>
+        <label for="currency">Currency:</label>
+        <select name="currency" id="currency" required>
             <option value="USD">USD</option>
             <option value="PKR">PKR</option>
             <option value="EUR">EUR</option>
             <option value="GBP">GBP</option>
         </select>
         
-        <label>Transaction Type:</label>
-        <select name="transaction_type" onchange="toggleRecipientField()" required>
-            <option value="credit">Credit</option>
-            <option value="debit">Debit</option>
+        <label for="transaction_type">Transaction Type:</label>
+        <select name="transaction_type" id="transaction_type" onchange="toggleRecipientField()" required>
+            <option value="credit">Credit (Client Payment)</option>
+            <option value="debit">Debit (Expense or Personal Payment)</option>
         </select>
         
-        <label>Purpose:</label>
-        <input type="text" name="purpose" required>
+        <label for="purpose">Purpose:</label>
+        <input type="text" name="purpose" id="purpose" required>
         
-        <label>Recipient:</label>
-        <input type="text" name="recipient" required>
+        <label for="recipient">Recipient (if applicable):</label>
+        <input type="text" name="recipient" id="recipient" required>
         
-        <label>Paid By:</label>
-        <select name="paid_by" required>
+        <label for="paid_by">Paid By:</label>
+        <select name="paid_by" id="paid_by" required>
             <option value="" disabled selected>Select Who Paid</option>
             <option value="Zain">Zain</option>
             <option value="Hammad">Hammad</option>
             <option value="Rizwan">Rizwan</option>
         </select>
         
-        <label>Settled:</label>
-        <select name="settled">
+        <label for="settled">Settled:</label>
+        <select name="settled" id="settled">
             <option value="1">Yes</option>
             <option value="0">No</option>
         </select>
