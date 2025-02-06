@@ -162,13 +162,13 @@
                     <td>{{ User.query.get(finance.added_by).username }}</td>
                     <td>{{ finance.amount }}</td>
                     <td>{{ finance.transaction_type }}</td>
+                    <td>{{ finance.balance }}</td>
                     <td>{{ finance.currency }}</td>
                     <td>{{ finance.purpose }}</td>
                     <td>{{ finance.date_added.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>{{ finance.recipient }}</td>
                     <td>{{ finance.paid_by }}</td>
                     <td>{{ 'Yes' if finance.settled else 'No' }}</td>
-                    <td>{{ finance.balance }}</td>
                     <td>
                         <a href="/finance/edit/{{ finance.id }}">Edit</a>
                         <a href="/finance/revisions/{{ finance.id }}">Revisions</a>
