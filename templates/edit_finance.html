@@ -3,8 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Finance Record</title>
+    <title>Edit Finance</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <script>
+        function toggleRecipientField() {
+            const transactionType = document.querySelector('select[name="transaction_type"]').value;
+            const recipientField = document.querySelector('input[name="recipient"]');
+            recipientField.disabled = transactionType === 'credit';
+        }
+        window.onload = toggleRecipientField; // Ensure the state is updated on page load
+    </script>
 </head>
 <body>
     <h1>Edit Finance Record</h1>
@@ -20,6 +28,12 @@
             <option value="GBP" {% if finance.currency == 'GBP' %}selected{% endif %}>GBP</option>
         </select>
         
+        <label>Transaction Type:</label>
+        <select name="transaction_type" onchange="toggleRecipientField()" required>
+            <option value="credit" {% if finance.transaction_type == 'credit' %}selected{% endif %}>Credit</option>
+            <option value="debit" {% if finance.transaction_type == 'debit' %}selected{% endif %}>Debit</option>
+        </select>
+        
         <label>Purpose:</label>
         <input type="text" name="purpose" value="{{ finance.purpose }}" required>
         
@@ -27,12 +41,10 @@
         <input type="text" name="recipient" value="{{ finance.recipient }}" required>
         
         <label>Paid By:</label>
-        <input type="text" name="paid_by" value="{{ finance.paid_by }}" required>
-        
-        <label>Transaction Type:</label>
-        <select name="transaction_type" required>
-            <option value="debit" {% if finance.transaction_type == 'debit' %}selected{% endif %}>Debit</option>
-            <option value="credit" {% if finance.transaction_type == 'credit' %}selected{% endif %}>Credit</option>
+        <select name="paid_by" required>
+            <option value="Zain" {% if finance.paid_by == 'Zain' %}selected{% endif %}>Zain</option>
+            <option value="Hammad" {% if finance.paid_by == 'Hammad' %}selected{% endif %}>Hammad</option>
+            <option value="Rizwan" {% if finance.paid_by == 'Rizwan' %}selected{% endif %}>Rizwan</option>
         </select>
         
         <label>Settled:</label>
