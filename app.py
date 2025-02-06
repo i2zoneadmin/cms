@@ -346,7 +346,7 @@ class FinanceRevision(db.Model):
 def add_finance():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+
     if request.method == 'POST':
         # Fetch the last balance
         last_finance = Finance.query.order_by(Finance.id.desc()).first()
@@ -355,11 +355,15 @@ def add_finance():
         # Fetch form data
         transaction_type = request.form['transaction_type']
         amount = float(request.form['amount'])
-        debit_type = request.form.get('debit_type', None)  # expense or partner_payment
+        currency = request.form['currency']
+        purpose = request.form['purpose']
+        recipient = request.form.get('recipient')  # This can be None for partner payments
+        debit_type = request.form.get('debit_type', None)  # 'expense' or 'partner_payment'
         partner_paid_to = request.form.get('partner_paid_to', None)
-        recipient = request.form.get('recipient', None)
+        paid_by = request.form['paid_by']
+        settled = request.form.get('settled') == '1'
 
-        # Handle credit transactions
+        # Handle credit (income) logic
         if transaction_type == 'credit':
             # Distribute equally among partners
             for partner in PartnerBalance.query.all():
@@ -367,34 +371,46 @@ def add_finance():
                 db.session.add(partner)
             new_balance = last_balance + amount
 
-        # Handle debit transactions
+        # Handle debit logic
         elif transaction_type == 'debit':
             if debit_type == 'partner_payment':
-                # Validate partner payment logic
+                # Check if the partner exists
                 partner = PartnerBalance.query.filter_by(partner_name=partner_paid_to).first()
                 if not partner:
                     flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
                     return redirect(url_for('add_finance'))
+
+                # Check if the partner has sufficient balance
                 if partner.balance < amount:
                     flash(f"Error: Insufficient balance for {partner_paid_to}. Maximum available: {partner.balance:.2f}", "danger")
                     return redirect(url_for('add_finance'))
 
-                # Deduct from the specific partner's share
+                # Deduct from the specific partner's balance
                 partner.balance -= amount
                 db.session.add(partner)
 
-            # Deduct the amount from the total balance for both partner payments and expenses
-            new_balance = last_balance - amount
+                # Deduct the amount from the total balance
+                new_balance = last_balance - amount
 
-        # Create finance entry
+            elif debit_type == 'expense':
+                # Deduct the amount from the total balance (does not affect partner shares)
+                new_balance = last_balance - amount
+            else:
+                flash("Error: Debit type is required for debit transactions.", "danger")
+                return redirect(url_for('add_finance'))
+        else:
+            flash("Error: Invalid transaction type.", "danger")
+            return redirect(url_for('add_finance'))
+
+        # Create the finance record
         finance = Finance(
             added_by=session['user_id'],
             amount=amount,
-            currency=request.form['currency'],
-            purpose=request.form['purpose'],
+            currency=currency,
+            purpose=purpose,
             recipient=recipient,  # May be None for partner payments
-            paid_by=request.form['paid_by'],
-            settled=request.form.get('settled') == '1',
+            paid_by=paid_by,
+            settled=settled,
             transaction_type=transaction_type,
             debit_type=debit_type,
             partner_paid_to=partner_paid_to,
