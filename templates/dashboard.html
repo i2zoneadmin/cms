@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -57,6 +57,118 @@
                             <a href="/revisions/{{ client.id }}" class="revisions">Revisions</a>
                             <a href="/reports/report/{{ client.id }}" class="preview">Preview Report</a>
                             <a href="/reports/report/download/{{ client.id }}" class="download">Download Report</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client & Finance Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <h1>Client & Finance Dashboard</h1>
+    <div>
+        <a href="/add_client">Add Client</a> |
+        <a href="/finance/add">Add Finance</a> |
+        <a href="/logout">Logout</a>
+    </div>
+
+    <!-- Client Table -->
+    <div class="table-container">
+        <h2>Clients</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Client No</th>
+                    <th>Client Name</th>
+                    <th>Contract Date</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
+                    <th>Description</th>
+                    <th>Progress</th>
+                    <th>Upwork Account</th>
+                    <th>Billing Type</th>
+                    <th>Price</th>
+                    <th>Total Hours Worked</th>
+                    <th>Currency</th>
+                    <th>Created By</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <td>{{ client.client_no }}</td>
+                    <td>{{ client.client_name }}</td>
+                    <td>{{ client.contract_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ client.deadline.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ client.status }}</td>
+                    <td>{{ client.description }}</td>
+                    <td>{{ client.progress }}</td>
+                    <td>{{ client.upwork_account }}</td>
+                    <td>{{ client.billing_type }}</td>
+                    <td>{{ client.price }}</td>
+                    <td>{% if client.billing_type == 'hourly' %}{{ client.hours_worked }}{% else %}N/A{% endif %}</td>
+                    <td>{{ client.currency }}</td>
+                    <td>{{ User.query.get(client.created_by).username }}</td>
+                    <td>{{ client.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="/edit_client/{{ client.id }}" class="edit">Edit</a>
+                            <a href="/revisions/{{ client.id }}" class="revisions">Revisions</a>
+                            <a href="/reports/report/{{ client.id }}" class="preview">Preview Report</a>
+                            <a href="/reports/report/download/{{ client.id }}" class="download">Download Report</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Finance Table -->
+    <div class="table-container">
+        <h2>Finances</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Added By</th>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>Purpose</th>
+                    <th>Date Added</th>
+                    <th>Recipient</th>
+                    <th>Bank Account</th>
+                    <th>Settled</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for finance in finances %}
+                <tr>
+                    <td>{{ User.query.get(finance.added_by).username }}</td>
+                    <td>{{ finance.amount }}</td>
+                    <td>{{ finance.currency }}</td>
+                    <td>{{ finance.purpose }}</td>
+                    <td>{{ finance.date_added.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ finance.recipient }}</td>
+                    <td>{{ finance.bank_account }}</td>
+                    <td>{{ 'Yes' if finance.settled else 'No' }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="/finance/edit/{{ finance.id }}" class="edit">Edit</a>
+                            <a href="/finance/revisions/{{ finance.id }}" class="revisions">Revisions</a>
                         </div>
                     </td>
                 </tr>
