@@ -48,7 +48,7 @@ class Revision(db.Model):
     change_date = db.Column(db.DateTime, default=lambda: datetime.now(pst))
     changes = db.Column(db.Text, nullable=False)
 
-@app.route('/')
+@app.route('/', endpoint='dashboard')
 def home():
     if 'user_id' in session:
         clients = Client.query.order_by(Client.client_no).all()
@@ -371,6 +371,7 @@ def add_finance():
         paid_by = request.form['paid_by']
         settled = request.form.get('settled') == '1'
 
+        # Handle credit (income) logic
         if transaction_type == 'credit':
             # Distribute equally among partners
             for partner in PartnerBalance.query.all():
@@ -378,9 +379,10 @@ def add_finance():
                 db.session.add(partner)
             new_balance = last_balance + amount
 
+        # Handle debit logic
         elif transaction_type == 'debit':
             if debit_type == 'partner_payment':
-                # Clean partner name
+                # Clean up the partner name to avoid case sensitivity or whitespace issues
                 partner_paid_to = partner_paid_to.strip() if partner_paid_to else None
 
                 # Check if the partner exists
@@ -397,7 +399,7 @@ def add_finance():
                     flash(f"Error: Insufficient balance for {partner_paid_to}. Maximum available: {partner.balance:.2f}", "danger")
                     return redirect(url_for('add_finance'))
 
-                # Deduct from the partner's balance
+                # Deduct from the specific partner's balance
                 partner.balance -= amount
                 db.session.add(partner)
 
@@ -405,9 +407,8 @@ def add_finance():
                 new_balance = last_balance - amount
 
             elif debit_type == 'expense':
-                # Deduct the amount from the total balance
+                # Deduct the amount from the total balance (does not affect partner shares)
                 new_balance = last_balance - amount
-
             else:
                 flash("Error: Debit type is required for debit transactions.", "danger")
                 return redirect(url_for('add_finance'))
@@ -433,7 +434,7 @@ def add_finance():
         db.session.commit()
 
         flash("Finance record added successfully.", "success")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('home'))  # Use 'home' instead of 'dashboard'
 
     return render_template('add_finance.html', partners=['Zain', 'Hammad', 'Rizwan'])
 
