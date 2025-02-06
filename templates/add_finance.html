@@ -11,10 +11,18 @@
     <h1>Add Finance Record</h1>
     <form action="/finance/add" method="POST">
         <label>Amount:</label>
-        <input type="number" name="amount" required>
+        <input type="number" name="amount" step="0.01" required>
+        
+        <label>Transaction Type:</label>
+        <select name="transaction_type" required>
+            <option value="" disabled selected>Select Transaction Type</option>
+            <option value="debit">Debit</option>
+            <option value="credit">Credit</option>
+        </select>
         
         <label>Currency:</label>
         <select name="currency" required>
+            <option value="" disabled selected>Select Currency</option>
             <option value="USD">USD</option>
             <option value="PKR">PKR</option>
             <option value="EUR">EUR</option>
@@ -27,15 +35,14 @@
         <label>Receiver:</label>
         <input type="text" name="recipient" required>
         
-        <label>Sender's Bank Account:</label>
-        <select name="bank_account" required>
-            <option value="" disabled selected>Select a bank account</option>
-            <option value="Zain's">Zain's</option>
-            <option value="Hammad's">Hammad's</option>
-            <option value="Rizwan's">Rizwan's</option>
+        <label>Paid By:</label>
+        <select name="paid_by" required>
+            <option value="" disabled selected>Select Who Paid</option>
+            <option value="Zain">Zain</option>
+            <option value="Hammad">Hammad</option>
+            <option value="Rizwan">Rizwan</option>
         </select>
         
-
         <label>Settled:</label>
         <select name="settled">
             <option value="1">Yes</option>

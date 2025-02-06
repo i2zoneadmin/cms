@@ -322,8 +322,11 @@ class Finance(db.Model):
     purpose = db.Column(db.String(255), nullable=False)
     date_added = db.Column(db.DateTime, default=lambda: datetime.now(pst))
     recipient = db.Column(db.String(100), nullable=False)
-    bank_account = db.Column(db.String(100), nullable=False)
+    paid_by = db.Column(db.String(100), nullable=False)
     settled = db.Column(db.Boolean, default=False)
+    transaction_type = db.Column(db.String(10), nullable=False)  # "debit" or "credit"
+    balance = db.Column(db.Float, nullable=False, default=0.0)  # Running balance
+
 
 class FinanceRevision(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -344,19 +347,31 @@ def add_finance():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST':
+        # Fetch the last balance
+        last_finance = Finance.query.order_by(Finance.id.desc()).first()
+        last_balance = last_finance.balance if last_finance else 0.0
+
+        # Determine new balance based on transaction type
+        transaction_type = request.form['transaction_type']
+        amount = float(request.form['amount'])
+        new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
+
         finance = Finance(
             added_by=session['user_id'],
-            amount=float(request.form['amount']),
+            amount=amount,
             currency=request.form['currency'],
             purpose=request.form['purpose'],
             recipient=request.form['recipient'],
-            bank_account=request.form['bank_account'],
-            settled=request.form.get('settled') == 'on'
+            paid_by=request.form['paid_by'],
+            settled=request.form.get('settled') == 'on',
+            transaction_type=transaction_type,
+            balance=new_balance
         )
         db.session.add(finance)
         db.session.commit()
         return redirect(url_for('home'))  # Redirect to the unified dashboard
     return render_template('add_finance.html')
+
 
 @app.route('/finance/edit/<int:finance_id>', methods=['GET', 'POST'])
 def edit_finance(finance_id):
@@ -365,33 +380,36 @@ def edit_finance(finance_id):
     finance = Finance.query.get_or_404(finance_id)
     if request.method == 'POST':
         changes = []
-        if finance.amount != float(request.form['amount']):
-            changes.append(f"Amount changed from {finance.amount} to {request.form['amount']}")
-            finance.amount = float(request.form['amount'])
-        if finance.currency != request.form['currency']:
-            changes.append(f"Currency changed from {finance.currency} to {request.form['currency']}")
-            finance.currency = request.form['currency']
-        if finance.purpose != request.form['purpose']:
-            changes.append("Purpose changed")
-            finance.purpose = request.form['purpose']
-        if finance.recipient != request.form['recipient']:
-            changes.append(f"Recipient changed from {finance.recipient} to {request.form['recipient']}")
-            finance.recipient = request.form['recipient']
-        if finance.bank_account != request.form['bank_account']:
-            changes.append(f"Bank Account changed from {finance.bank_account} to {request.form['bank_account']}")
-            finance.bank_account = request.form['bank_account']
-        settled = request.form.get('settled') == 'on'
-        if finance.settled != settled:
-            changes.append(f"Settlement status changed to {'Settled' if settled else 'Unsettled'}")
-            finance.settled = settled
-        
-        if changes:
-            revision = FinanceRevision(finance_id=finance.id, changed_by=session['user_id'], changes='; '.join(changes))
-            db.session.add(revision)
-        
+
+        # Update amount or transaction type
+        new_transaction_type = request.form['transaction_type']
+        new_amount = float(request.form['amount'])
+
+        # Fetch the previous balance
+        prev_finance = Finance.query.filter(Finance.id < finance.id).order_by(Finance.id.desc()).first()
+        prev_balance = prev_finance.balance if prev_finance else 0.0
+
+        # Recalculate this entry's balance
+        new_balance = prev_balance + new_amount if new_transaction_type == 'credit' else prev_balance - new_amount
+
+        # Update this entry
+        finance.amount = new_amount
+        finance.transaction_type = new_transaction_type
+        finance.balance = new_balance
+
+        # Update subsequent balances
+        subsequent_finances = Finance.query.filter(Finance.id > finance.id).order_by(Finance.id.asc()).all()
+        for subsequent_finance in subsequent_finances:
+            if subsequent_finance.transaction_type == 'credit':
+                subsequent_finance.balance = subsequent_finance.balance - finance.amount + new_amount
+            else:
+                subsequent_finance.balance = subsequent_finance.balance + finance.amount - new_amount
+            db.session.add(subsequent_finance)
+
         db.session.commit()
         return redirect(url_for('home'))  # Redirect to the unified dashboard
     return render_template('edit_finance.html', finance=finance)
+
 
 @app.route('/finance/revisions/<int:finance_id>')
 def finance_revisions(finance_id):
@@ -413,4 +431,3 @@ if __name__ == '__main__':
             db.session.add_all([user1, user2, user3])
             db.session.commit()
     app.run(host='0.0.0.0', port=5000, debug=True)
-

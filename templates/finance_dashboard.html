@@ -17,7 +17,7 @@
             <th>Purpose</th>
             <th>Date Added</th>
             <th>Recipient</th>
-            <th>Bank Account</th>
+            <th>Paid By</th>
             <th>Settled</th>
             <th>Actions</th>
         </tr>
@@ -29,7 +29,7 @@
             <td>{{ finance.purpose }}</td>
             <td>{{ finance.date_added }}</td>
             <td>{{ finance.recipient }}</td>
-            <td>{{ finance.bank_account }}</td>
+            <td>{{ finance.paid_by }}</td>
             <td>{{ 'Yes' if finance.settled else 'No' }}</td>
             <td>
                 <a href="/finance/edit/{{ finance.id }}" class="btn-edit">Edit</a>
