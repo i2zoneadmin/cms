@@ -28,8 +28,14 @@
         <input type="text" name="recipient" required>
         
         <label>Sender's Bank Account:</label>
-        <input type="text" name="bank_account" required>
+        <select name="bank_account" required>
+            <option value="" disabled selected>Select a bank account</option>
+            <option value="Zain's">Zain's</option>
+            <option value="Hammad's">Hammad's</option>
+            <option value="Rizwan's">Rizwan's</option>
+        </select>
         
+
         <label>Settled:</label>
         <select name="settled">
             <option value="1">Yes</option>
