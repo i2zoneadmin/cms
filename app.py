@@ -1,11 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from flask import flash
 
 
 app = Flask(__name__)
@@ -329,14 +328,12 @@ class Finance(db.Model):
     transaction_type = db.Column(db.String(10), nullable=False)  # "debit" or "credit"
     debit_type = db.Column(db.String(20), nullable=True)  # "expense" or "partner_payment"
     partner_paid_to = db.Column(db.String(100), nullable=True)  # For partner payments
-    balance = db.Column(db.Float, nullable=False, default=0.0)  # Running balance
-
+    balance = db.Column(db.Float, nullable=False, default=0.0)
 
 class PartnerBalance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     partner_name = db.Column(db.String(100), unique=True, nullable=False)
     balance = db.Column(db.Float, nullable=False, default=0.0)
-
 
 class FinanceRevision(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -358,9 +355,9 @@ def add_finance():
         # Fetch form data
         transaction_type = request.form['transaction_type']
         amount = float(request.form['amount'])
-        debit_type = request.form.get('debit_type', None)  # expense or partner_payment
+        debit_type = request.form.get('debit_type', None)  # "expense" or "partner_payment"
         partner_paid_to = request.form.get('partner_paid_to', None)
-        
+
         # Calculate new balance
         new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
 
@@ -387,7 +384,7 @@ def add_finance():
             amount=amount,
             currency=request.form['currency'],
             purpose=request.form['purpose'],
-            recipient=request.form['recipient'],
+            recipient=request.form.get('recipient', None),
             paid_by=request.form['paid_by'],
             settled=request.form.get('settled') == 'on',
             transaction_type=transaction_type,
