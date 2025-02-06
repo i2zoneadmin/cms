@@ -34,6 +34,18 @@
 </head>
 <body>
     <h1>Add Finance Record</h1>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
     <form action="/finance/add" method="POST">
         <label>Transaction Type:</label>
         <select name="transaction_type" onchange="toggleFields()" required>
@@ -88,5 +100,32 @@
 
         <button type="submit" class="btn">Add Finance</button>
     </form>
+
+    <!-- Flash Messages Styling -->
+    <style>
+        .flashes {
+            list-style-type: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .flashes li {
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .flashes .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .flashes .danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
 </body>
 </html>

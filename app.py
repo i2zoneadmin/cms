@@ -355,40 +355,44 @@ def add_finance():
         # Fetch form data
         transaction_type = request.form['transaction_type']
         amount = float(request.form['amount'])
-        debit_type = request.form.get('debit_type', None)  # "expense" or "partner_payment"
+        debit_type = request.form.get('debit_type', None)  # expense or partner_payment
         partner_paid_to = request.form.get('partner_paid_to', None)
+        recipient = request.form.get('recipient', None)
+        paid_by = request.form['paid_by']
 
         # Calculate new balance
-        if transaction_type == 'credit':
-            new_balance = last_balance + amount
-        elif transaction_type == 'debit':
-            new_balance = last_balance - amount
-        else:
-            flash("Invalid transaction type.", "danger")
-            return redirect(url_for('add_finance'))
+        new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
 
         # Handle partner payment logic
         if transaction_type == 'debit' and debit_type == 'partner_payment':
+            if not partner_paid_to:
+                flash("Error: Partner must be selected for partner payment.", "danger")
+                return redirect(url_for('add_finance'))
+            
             partner = PartnerBalance.query.filter_by(partner_name=partner_paid_to).first()
             if not partner:
-                flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
+                flash(f"Error: Partner {partner_paid_to} not found.", "danger")
                 return redirect(url_for('add_finance'))
-
+            
             if partner.balance < amount:
                 flash(f"Error: Insufficient balance for {partner_paid_to}.", "danger")
                 return redirect(url_for('add_finance'))
-
-            # Deduct from the partner's share
+            
+            # Deduct from partner's share
             partner.balance -= amount
             db.session.add(partner)
 
         # Handle credit (income) or expense logic
-        if transaction_type == 'credit':
-            for partner in PartnerBalance.query.all():
+        elif transaction_type == 'credit':
+            partners = PartnerBalance.query.all()
+            for partner in partners:
                 partner.balance += amount / 3  # Distribute equally among partners
                 db.session.add(partner)
+
         elif transaction_type == 'debit' and debit_type == 'expense':
-            pass  # Company expense does not affect partner shares
+            if not recipient:
+                flash("Error: Recipient must be provided for an expense.", "danger")
+                return redirect(url_for('add_finance'))
 
         # Create finance entry
         finance = Finance(
@@ -396,9 +400,9 @@ def add_finance():
             amount=amount,
             currency=request.form['currency'],
             purpose=request.form['purpose'],
-            recipient=request.form.get('recipient', None),
-            paid_by=request.form['paid_by'],
-            settled=request.form.get('settled') == 'on',
+            recipient=recipient,
+            paid_by=paid_by,
+            settled=request.form.get('settled') == '1',
             transaction_type=transaction_type,
             debit_type=debit_type,
             partner_paid_to=partner_paid_to,
@@ -407,7 +411,7 @@ def add_finance():
         db.session.add(finance)
         db.session.commit()
 
-        flash("Finance record added successfully!", "success")
+        flash("Finance record added successfully.", "success")
         return redirect(url_for('home'))
     
     return render_template('add_finance.html', partners=PartnerBalance.query.all())
