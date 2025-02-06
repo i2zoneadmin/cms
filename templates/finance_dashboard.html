@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h1>Finance Dashboard</h1>
+    <a href="/finance/add" class="btn">Add Finance</a>
+    <table>
+        <tr>
+            <th>Added By</th>
+            <th>Amount</th>
+            <th>Currency</th>
+            <th>Purpose</th>
+            <th>Date Added</th>
+            <th>Recipient</th>
+            <th>Bank Account</th>
+            <th>Settled</th>
+            <th>Actions</th>
+        </tr>
+        {% for finance in finances %}
+        <tr>
+            <td>{{ finance.added_by }}</td>
+            <td>{{ finance.amount }}</td>
+            <td>{{ finance.currency }}</td>
+            <td>{{ finance.purpose }}</td>
+            <td>{{ finance.date_added }}</td>
+            <td>{{ finance.recipient }}</td>
+            <td>{{ finance.bank_account }}</td>
+            <td>{{ 'Yes' if finance.settled else 'No' }}</td>
+            <td>
+                <a href="/finance/edit/{{ finance.id }}" class="btn-edit">Edit</a>
+                <a href="/finance/revisions/{{ finance.id }}" class="btn-revisions">Revisions</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

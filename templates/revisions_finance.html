@@ -1,0 +1,29 @@
+<!-- revisions_finance.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Revisions</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h1>Finance Record Revisions</h1>
+    <table>
+        <tr>
+            <th>Changed By</th>
+            <th>Change Date</th>
+            <th>Changes</th>
+        </tr>
+        {% for revision in revisions %}
+        <tr>
+            <td>{{ revision.changed_by }}</td>
+            <td>{{ revision.change_date }}</td>
+            <td>{{ revision.changes }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    <a href="/finance" class="btn">Back to Finance Dashboard</a>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!-- edit_finance.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Finance Record</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h1>Edit Finance Record</h1>
+    <form action="/finance/edit/{{ finance.id }}" method="POST">
+        <label>Amount:</label>
+        <input type="number" name="amount" value="{{ finance.amount }}" required>
+        
+        <label>Currency:</label>
+        <select name="currency" required>
+            <option value="USD" {% if finance.currency == 'USD' %}selected{% endif %}>USD</option>
+            <option value="PKR" {% if finance.currency == 'PKR' %}selected{% endif %}>PKR</option>
+            <option value="EUR" {% if finance.currency == 'EUR' %}selected{% endif %}>EUR</option>
+            <option value="GBP" {% if finance.currency == 'GBP' %}selected{% endif %}>GBP</option>
+        </select>
+        
+        <label>Purpose:</label>
+        <input type="text" name="purpose" value="{{ finance.purpose }}" required>
+        
+        <label>Recipient:</label>
+        <input type="text" name="recipient" value="{{ finance.recipient }}" required>
+        
+        <label>Bank Account:</label>
+        <input type="text" name="bank_account" value="{{ finance.bank_account }}" required>
+        
+        <label>Settled:</label>
+        <select name="settled">
+            <option value="1" {% if finance.settled %}selected{% endif %}>Yes</option>
+            <option value="0" {% if not finance.settled %}selected{% endif %}>No</option>
+        </select>
+        
+        <button type="submit" class="btn">Update Finance</button>
+    </form>
+</body>
+</html>

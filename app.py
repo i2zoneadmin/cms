@@ -308,6 +308,98 @@ def report_download(client_id):
         download_name=f"client_report_{client.client_no}.pdf"
     )
 
+
+##########################################################################################
+############################# Finance Management System ##################################
+###########################################################################################
+
+class Finance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    added_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    currency = db.Column(db.String(10), nullable=False)
+    purpose = db.Column(db.String(255), nullable=False)
+    date_added = db.Column(db.DateTime, default=lambda: datetime.now(pst))
+    recipient = db.Column(db.String(100), nullable=False)
+    bank_account = db.Column(db.String(100), nullable=False)
+    settled = db.Column(db.Boolean, default=False)
+
+class FinanceRevision(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    finance_id = db.Column(db.Integer, db.ForeignKey('finance.id'), nullable=False)
+    changed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    change_date = db.Column(db.DateTime, default=lambda: datetime.now(pst))
+    changes = db.Column(db.Text, nullable=False)
+
+@app.route('/finance')
+def finance_dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    finances = Finance.query.all()
+    return render_template('finance_dashboard.html', finances=finances)
+
+@app.route('/finance/add', methods=['GET', 'POST'])
+def add_finance():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        finance = Finance(
+            added_by=session['user_id'],
+            amount=float(request.form['amount']),
+            currency=request.form['currency'],
+            purpose=request.form['purpose'],
+            recipient=request.form['recipient'],
+            bank_account=request.form['bank_account'],
+            settled=request.form.get('settled') == 'on'
+        )
+        db.session.add(finance)
+        db.session.commit()
+        return redirect(url_for('finance_dashboard'))
+    return render_template('add_finance.html')
+
+@app.route('/finance/edit/<int:finance_id>', methods=['GET', 'POST'])
+def edit_finance(finance_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    finance = Finance.query.get_or_404(finance_id)
+    if request.method == 'POST':
+        changes = []
+        if finance.amount != float(request.form['amount']):
+            changes.append(f"Amount changed from {finance.amount} to {request.form['amount']}")
+            finance.amount = float(request.form['amount'])
+        if finance.currency != request.form['currency']:
+            changes.append(f"Currency changed from {finance.currency} to {request.form['currency']}")
+            finance.currency = request.form['currency']
+        if finance.purpose != request.form['purpose']:
+            changes.append("Purpose changed")
+            finance.purpose = request.form['purpose']
+        if finance.recipient != request.form['recipient']:
+            changes.append(f"Recipient changed from {finance.recipient} to {request.form['recipient']}")
+            finance.recipient = request.form['recipient']
+        if finance.bank_account != request.form['bank_account']:
+            changes.append(f"Bank Account changed from {finance.bank_account} to {request.form['bank_account']}")
+            finance.bank_account = request.form['bank_account']
+        settled = request.form.get('settled') == 'on'
+        if finance.settled != settled:
+            changes.append(f"Settlement status changed to {'Settled' if settled else 'Unsettled'}")
+            finance.settled = settled
+        
+        if changes:
+            revision = FinanceRevision(finance_id=finance.id, changed_by=session['user_id'], changes='; '.join(changes))
+            db.session.add(revision)
+        
+        db.session.commit()
+        return redirect(url_for('finance_dashboard'))
+    return render_template('edit_finance.html', finance=finance)
+
+@app.route('/finance/revisions/<int:finance_id>')
+def finance_revisions(finance_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    revisions = FinanceRevision.query.filter_by(finance_id=finance_id).all()
+    return render_template('revisions_finance.html', revisions=revisions)
+
+
 # Create predefined users
 if __name__ == '__main__':
     with app.app_context():

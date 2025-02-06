@@ -1,0 +1,42 @@
+<!-- add_finance.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Finance</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h1>Add Finance Record</h1>
+    <form action="/finance/add" method="POST">
+        <label>Amount:</label>
+        <input type="number" name="amount" required>
+        
+        <label>Currency:</label>
+        <select name="currency" required>
+            <option value="USD">USD</option>
+            <option value="PKR">PKR</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+        </select>
+        
+        <label>Purpose:</label>
+        <input type="text" name="purpose" required>
+        
+        <label>Recipient:</label>
+        <input type="text" name="recipient" required>
+        
+        <label>Bank Account:</label>
+        <input type="text" name="bank_account" required>
+        
+        <label>Settled:</label>
+        <select name="settled">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+        
+        <button type="submit" class="btn">Add Finance</button>
+    </form>
+</body>
+</html>
