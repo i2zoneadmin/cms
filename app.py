@@ -348,36 +348,30 @@ def add_finance():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        # Fetch the last balance
-        last_finance = Finance.query.order_by(Finance.id.desc()).first()
-        last_balance = last_finance.balance if last_finance else 0.0
+        try:
+            # Fetch the last balance
+            last_finance = Finance.query.order_by(Finance.id.desc()).first()
+            last_balance = last_finance.balance if last_finance else 0.0
 
-        # Fetch form data
-        transaction_type = request.form['transaction_type']
-        amount = float(request.form['amount'])
-        currency = request.form['currency']
-        purpose = request.form['purpose']
-        recipient = request.form.get('recipient')  # This can be None for partner payments
-        debit_type = request.form.get('debit_type', None)  # 'expense' or 'partner_payment'
-        partner_paid_to = request.form.get('partner_paid_to', None)
-        paid_by = request.form['paid_by']
-        settled = request.form.get('settled') == '1'
+            # Fetch form data
+            transaction_type = request.form['transaction_type']
+            amount = float(request.form['amount'])
+            currency = request.form['currency']
+            purpose = request.form['purpose']
+            recipient = request.form.get('recipient')
+            debit_type = request.form.get('debit_type', None)
+            partner_paid_to = request.form.get('partner_paid_to', None)
+            paid_by = request.form['paid_by']
+            settled = request.form.get('settled') == '1'
 
-        # Handle credit (income) logic
-        if transaction_type == 'credit':
-            # Distribute equally among partners
-            for partner in PartnerBalance.query.all():
-                partner.balance += amount / 3
-                db.session.add(partner)
-            new_balance = last_balance + amount
+            print(f"Partner Paid To (Submitted): '{partner_paid_to}'")
 
-        # Handle debit logic
-        elif transaction_type == 'debit':
-            if debit_type == 'partner_payment':
-                # Clean up the partner name to avoid case sensitivity or whitespace issues
+            # Handle debit logic for partner payment
+            if transaction_type == 'debit' and debit_type == 'partner_payment':
                 partner_paid_to = partner_paid_to.strip() if partner_paid_to else None
+                print(f"Cleaned Partner Paid To: '{partner_paid_to}'")
 
-                # Check if the partner exists
+                # Query the partner
                 partner = PartnerBalance.query.filter(
                     PartnerBalance.partner_name.ilike(partner_paid_to)
                 ).first()
@@ -386,80 +380,42 @@ def add_finance():
                     flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
                     return redirect(url_for('add_finance'))
 
+                print(f"Found Partner: {partner.partner_name}, Balance: {partner.balance}")
 
-                # Check if the partner has sufficient balance
+                # Check balance
                 if partner.balance < amount:
                     flash(f"Error: Insufficient balance for {partner_paid_to}. Maximum available: {partner.balance:.2f}", "danger")
                     return redirect(url_for('add_finance'))
 
-                # Deduct from the specific partner's balance
+                # Deduct balance
                 partner.balance -= amount
                 db.session.add(partner)
 
-                # Deduct the amount from the total balance
-                new_balance = last_balance - amount
-
-            elif debit_type == 'expense':
-                # Deduct the amount from the total balance (does not affect partner shares)
-                new_balance = last_balance - amount
-            else:
-                flash("Error: Debit type is required for debit transactions.", "danger")
-                return redirect(url_for('add_finance'))
-        else:
-            flash("Error: Invalid transaction type.", "danger")
+            # Proceed with creating the finance record
+            new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
+            finance = Finance(
+                added_by=session['user_id'],
+                amount=amount,
+                currency=currency,
+                purpose=purpose,
+                recipient=recipient,
+                paid_by=paid_by,
+                settled=settled,
+                transaction_type=transaction_type,
+                debit_type=debit_type,
+                partner_paid_to=partner_paid_to,
+                balance=new_balance,
+            )
+            db.session.add(finance)
+            db.session.commit()
+            flash("Finance record added successfully.", "success")
+            return redirect(url_for('home'))
+        except Exception as e:
+            print(f"Error: {e}")
+            flash(f"Error: {str(e)}", "danger")
             return redirect(url_for('add_finance'))
 
-        # Create the finance record
-        finance = Finance(
-            added_by=session['user_id'],
-            amount=amount,
-            currency=currency,
-            purpose=purpose,
-            recipient=recipient,  # May be None for partner payments
-            paid_by=paid_by,
-            settled=settled,
-            transaction_type=transaction_type,
-            debit_type=debit_type,
-            partner_paid_to=partner_paid_to,
-            balance=new_balance,
-        )
-        db.session.add(finance)
-        db.session.commit()
-
-        flash("Finance record added successfully.", "success")
-        return redirect(url_for('home'))
-
     return render_template('add_finance.html', partners=['Zain', 'Hammad', 'Rizwan'])
-
-# @app.route('/finance/add', methods=['GET', 'POST'])
-# def add_finance():
-#     if 'user_id' not in session:
-#         return redirect(url_for('login'))
-#     if request.method == 'POST':
-#         # Fetch the last balance
-#         last_finance = Finance.query.order_by(Finance.id.desc()).first()
-#         last_balance = last_finance.balance if last_finance else 0.0
-
-#         # Determine new balance based on transaction type
-#         transaction_type = request.form['transaction_type']
-#         amount = float(request.form['amount'])
-#         new_balance = last_balance + amount if transaction_type == 'credit' else last_balance - amount
-
-#         finance = Finance(
-#             added_by=session['user_id'],
-#             amount=amount,
-#             currency=request.form['currency'],
-#             purpose=request.form['purpose'],
-#             recipient=request.form['recipient'],
-#             paid_by=request.form['paid_by'],
-#             settled=request.form.get('settled') == 'on',
-#             transaction_type=transaction_type,
-#             balance=new_balance
-#         )
-#         db.session.add(finance)
-#         db.session.commit()
-#         return redirect(url_for('home'))  # Redirect to the unified dashboard
-#     return render_template('add_finance.html')
 
 
 @app.route('/finance/edit/<int:finance_id>', methods=['GET', 'POST'])
