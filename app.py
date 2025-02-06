@@ -332,12 +332,12 @@ class FinanceRevision(db.Model):
     change_date = db.Column(db.DateTime, default=lambda: datetime.now(pst))
     changes = db.Column(db.Text, nullable=False)
 
-@app.route('/finance')
-def finance_dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    finances = Finance.query.all()
-    return render_template('finance_dashboard.html', finances=finances)
+# @app.route('/finance')
+# def finance_dashboard():
+#     if 'user_id' not in session:
+#         return redirect(url_for('login'))
+#     finances = Finance.query.all()
+#     return render_template('finance_dashboard.html', finances=finances)
 
 @app.route('/finance/add', methods=['GET', 'POST'])
 def add_finance():
@@ -355,7 +355,7 @@ def add_finance():
         )
         db.session.add(finance)
         db.session.commit()
-        return redirect(url_for('finance_dashboard'))
+        return redirect(url_for('home'))  # Redirect to the unified dashboard
     return render_template('add_finance.html')
 
 @app.route('/finance/edit/<int:finance_id>', methods=['GET', 'POST'])
@@ -390,7 +390,7 @@ def edit_finance(finance_id):
             db.session.add(revision)
         
         db.session.commit()
-        return redirect(url_for('finance_dashboard'))
+        return redirect(url_for('home'))  # Redirect to the unified dashboard
     return render_template('edit_finance.html', finance=finance)
 
 @app.route('/finance/revisions/<int:finance_id>')
