@@ -400,6 +400,12 @@ def edit_finance(finance_id):
             changes.append(f"Purpose changed from '{finance.purpose}' to '{new_purpose}'")
             finance.purpose = new_purpose
 
+        # Check and update the currency
+        new_currency = request.form['currency']
+        if finance.currency != new_currency:
+            changes.append(f"Currency changed from {finance.currency} to {new_currency}")
+            finance.currency = new_currency
+
         # Check and update the recipient
         new_recipient = request.form['recipient']
         if finance.recipient != new_recipient:
