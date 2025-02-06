@@ -74,18 +74,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client & Finance Dashboard</title>
     <link rel="stylesheet" href="/static/css/dashboard.css">
+    <style>
+        .header-right {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .section-header {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
 </head>
 <body>
     <h1>Client & Finance Dashboard</h1>
-    <div>
-        <a href="/add_client">Add Client</a> |
-        <a href="/finance/add">Add Finance</a> |
-        <a href="/logout">Logout</a>
+    <div class="header-right">
+        <a href="/logout" class="btn">Logout</a>
     </div>
 
-    <!-- Client Table -->
-    <div class="table-container">
+    <!-- Client Section -->
+    <div class="section-header">
         <h2>Clients</h2>
+        <a href="/add_client" class="btn">Add Client</a>
+    </div>
+    <div class="table-container">
         <table>
             <thead>
                 <tr>
@@ -111,9 +125,9 @@
                 <tr>
                     <td>{{ client.client_no }}</td>
                     <td>{{ client.client_name }}</td>
+                    <td>{{ client.status }}</td>
                     <td>{{ client.contract_date.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>{{ client.deadline.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>{{ client.status }}</td>
                     <td>{{ client.description }}</td>
                     <td>{{ client.progress }}</td>
                     <td>{{ client.upwork_account }}</td>
@@ -137,9 +151,12 @@
         </table>
     </div>
 
-    <!-- Finance Table -->
-    <div class="table-container">
+    <!-- Finance Section -->
+    <div class="section-header">
         <h2>Finances</h2>
+        <a href="/finance/add" class="btn">Add Finance</a>
+    </div>
+    <div class="table-container">
         <table>
             <thead>
                 <tr>
