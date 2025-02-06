@@ -109,25 +109,31 @@
             </tbody>
         </table>
     </div>
-<!-- Partner Balances Table -->
     <div class="table-container">
         <h2>Partner Balances</h2>
         <table>
             <thead>
                 <tr>
                     <th>Partner</th>
-                    <th>Balance</th>
+                    <th>Share (Balance / 3)</th>
                 </tr>
             </thead>
             <tbody>
-                {% for partner in partner_balances %}
+                {% set partner_share = finances[-1].balance / 3 if finances else 0 %}
                 <tr>
-                    <td>{{ partner.partner_name }}</td>
-                    <td>{{ '%.2f'|format(partner.balance) }}</td>
+                    <td>Zain</td>
+                    <td>{{ "%.2f" % partner_share }}</td>
                 </tr>
-                {% endfor %}
+                <tr>
+                    <td>Hammad</td>
+                    <td>{{ "%.2f" % partner_share }}</td>
+                </tr>
+                <tr>
+                    <td>Rizwan</td>
+                    <td>{{ "%.2f" % partner_share }}</td>
+                </tr>
             </tbody>
-        </table>
-    </div>
+        </table>    
+    </div>    
 </body>
 </html>
