@@ -1,4 +1,3 @@
-<!-- edit_finance.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,6 +28,12 @@
         
         <label>Paid By:</label>
         <input type="text" name="paid_by" value="{{ finance.paid_by }}" required>
+        
+        <label>Transaction Type:</label>
+        <select name="transaction_type" required>
+            <option value="debit" {% if finance.transaction_type == 'debit' %}selected{% endif %}>Debit</option>
+            <option value="credit" {% if finance.transaction_type == 'credit' %}selected{% endif %}>Credit</option>
+        </select>
         
         <label>Settled:</label>
         <select name="settled">
