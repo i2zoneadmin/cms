@@ -6,64 +6,86 @@
     <title>Add Finance</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <script>
-        function toggleRecipientField() {
+        function toggleFields() {
             const transactionType = document.querySelector('select[name="transaction_type"]').value;
+            const debitTypeField = document.querySelector('select[name="debit_type"]');
             const recipientField = document.querySelector('input[name="recipient"]');
-            const paidByField = document.querySelector('select[name="paid_by"]');
+            const partnerPaidField = document.querySelector('select[name="partner_paid_to"]');
 
-            if (transactionType === 'credit') {
-                recipientField.value = "";
-                recipientField.disabled = true;
-                paidByField.disabled = true;
+            if (transactionType === 'debit') {
+                debitTypeField.disabled = false;
+
+                if (debitTypeField.value === 'partner_payment') {
+                    partnerPaidField.disabled = false;
+                    recipientField.disabled = true;
+                } else {
+                    partnerPaidField.disabled = true;
+                    recipientField.disabled = false;
+                }
             } else {
-                recipientField.disabled = false;
-                paidByField.disabled = false;
+                debitTypeField.disabled = true;
+                partnerPaidField.disabled = true;
+                recipientField.disabled = true;
             }
         }
 
-        window.onload = toggleRecipientField; // Ensure the state is updated on page load
+        window.onload = toggleFields; // Update state on page load
     </script>
 </head>
 <body>
     <h1>Add Finance Record</h1>
     <form action="/finance/add" method="POST">
-        <label for="amount">Amount:</label>
-        <input type="number" name="amount" id="amount" required>
-        
-        <label for="currency">Currency:</label>
-        <select name="currency" id="currency" required>
+        <label>Transaction Type:</label>
+        <select name="transaction_type" onchange="toggleFields()" required>
+            <option value="credit">Credit</option>
+            <option value="debit">Debit</option>
+        </select>
+
+        <label>Amount:</label>
+        <input type="number" name="amount" step="0.01" required>
+
+        <label>Currency:</label>
+        <select name="currency" required>
             <option value="USD">USD</option>
             <option value="PKR">PKR</option>
             <option value="EUR">EUR</option>
             <option value="GBP">GBP</option>
         </select>
-        
-        <label for="transaction_type">Transaction Type:</label>
-        <select name="transaction_type" id="transaction_type" onchange="toggleRecipientField()" required>
-            <option value="credit">Credit (Client Payment)</option>
-            <option value="debit">Debit (Expense or Personal Payment)</option>
+
+        <label>Purpose:</label>
+        <input type="text" name="purpose" required>
+
+        <label>Debit Type (for Debits only):</label>
+        <select name="debit_type" onchange="toggleFields()">
+            <option value="" disabled selected>Select Type</option>
+            <option value="expense">Expense</option>
+            <option value="partner_payment">Partner Payment</option>
         </select>
-        
-        <label for="purpose">Purpose:</label>
-        <input type="text" name="purpose" id="purpose" required>
-        
-        <label for="recipient">Recipient (if applicable):</label>
-        <input type="text" name="recipient" id="recipient" required>
-        
-        <label for="paid_by">Paid By:</label>
-        <select name="paid_by" id="paid_by" required>
-            <option value="" disabled selected>Select Who Paid</option>
+
+        <label>Recipient (for Expenses only):</label>
+        <input type="text" name="recipient">
+
+        <label>Partner Paid To (for Partner Payments only):</label>
+        <select name="partner_paid_to">
+            <option value="" disabled selected>Select Partner</option>
             <option value="Zain">Zain</option>
             <option value="Hammad">Hammad</option>
             <option value="Rizwan">Rizwan</option>
         </select>
-        
-        <label for="settled">Settled:</label>
-        <select name="settled" id="settled">
+
+        <label>Paid By:</label>
+        <select name="paid_by" required>
+            <option value="Zain">Zain</option>
+            <option value="Hammad">Hammad</option>
+            <option value="Rizwan">Rizwan</option>
+        </select>
+
+        <label>Settled:</label>
+        <select name="settled">
             <option value="1">Yes</option>
             <option value="0">No</option>
         </select>
-        
+
         <button type="submit" class="btn">Add Finance</button>
     </form>
 </body>
