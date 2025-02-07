@@ -380,25 +380,32 @@ class PartnerBalance(db.Model):
 
 def get_partner_balances():
     """Compute partner balances dynamically from finance records."""
-    partners = {p.partner_name: 0.0 for p in PartnerBalance.query.all()}  
+    # Initialize all partners with 0 balance
+    partners = {p.partner_name: 0.0 for p in PartnerBalance.query.all()}
 
     for finance in Finance.query.all():
         if finance.transaction_type == "credit":
+            # Distribute credit equally among all partners
             for partner in partners:
                 partners[partner] += finance.amount / len(partners)
 
         elif finance.transaction_type == "debit":
             if finance.debit_type == "partner_payment" and finance.partner_paid_to:
+                # Deduct the amount from the partner who was paid
                 partners[finance.partner_paid_to] -= finance.amount
 
             elif finance.debit_type == "expense":
+                # Expense split equally among all partners
                 num_partners = len(partners)
                 share = finance.amount / num_partners
+
+                # Deduct equal share from everyone
                 for partner in partners:
-                    if partner == finance.paid_by:
-                        partners[partner] -= (finance.amount - share)
-                    else:
-                        partners[partner] -= share
+                    partners[partner] -= share
+
+                # Reimburse the paying partner
+                if finance.paid_by in partners:
+                    partners[finance.paid_by] += finance.amount - share  # Add back shares from others
 
     return partners
 
