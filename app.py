@@ -418,13 +418,12 @@ def add_finance():
                 # Calculate the equal share of the expense for each partner
                 share = amount / total_partners
                 
-                # Deduct each partner's share of the expense
                 for partner in all_partners:
                     if partner.partner_name == paid_by:
-                        # The paying partner's balance is reduced only by their share (they've already paid the full amount)
+                        # The paying partner bears only their share of the expense (reimbursed for the rest)
                         partner.balance -= (amount - share)
                     else:
-                        # Other partners' balances are reduced by their share
+                        # Other partners bear their equal share
                         partner.balance -= share
                     
                     db.session.add(partner)
