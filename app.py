@@ -7,7 +7,7 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 import requests
 
-SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
