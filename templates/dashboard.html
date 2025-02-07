@@ -126,6 +126,10 @@
                 {% endfor %}
             </tbody>
         </table>
-    </div>        
+        <!-- Total Balance Section -->
+        <div style="margin-top: 20px; font-weight: bold; text-align: center; color: #444;">
+            Total Balance: {{ "%.2f" % partners|sum(attribute='balance') }}
+        </div>
+    </div>
 </body>
 </html>
