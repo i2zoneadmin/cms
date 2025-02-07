@@ -462,14 +462,49 @@ def add_finance():
         if SLACK_WEBHOOK_URL:
             try:
                 slack_message = {
-                    "text": f":moneybag: A new finance entry has been added!\n"
-                            f"*Added By:* {User.query.get(session['user_id']).username}\n"
-                            f"*Amount:* {amount} {currency}\n"
-                            f"*Transaction Type:* {transaction_type.capitalize()}\n"
-                            f"*Purpose:* {purpose}\n"
-                            f"*Paid By:* {paid_by}\n"
-                            f"*Settled:* {'Yes' if settled else 'No'}"
+                    "blocks": [
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": ":moneybag: *A new finance entry has been added!* :moneybag:"
+                            }
+                        },
+                        {
+                            "type": "divider"
+                        },
+                        {
+                            "type": "section",
+                            "fields": [
+                                {
+                                    "type": "mrkdwn",
+                                    "text": f"*Added By:*\n{User.query.get(session['user_id']).username}"
+                                },
+                                {
+                                    "type": "mrkdwn",
+                                    "text": f"*Amount:*\n{amount} {currency}"
+                                },
+                                {
+                                    "type": "mrkdwn",
+                                    "text": f"*Transaction Type:*\n{transaction_type.capitalize()}"
+                                },
+                                {
+                                    "type": "mrkdwn",
+                                    "text": f"*Purpose:*\n{purpose}"
+                                },
+                                {
+                                    "type": "mrkdwn",
+                                    "text": f"*Paid By:*\n{paid_by}"
+                                },
+                                {
+                                    "type": "mrkdwn",
+                                    "text": f"*Settled:*\n{'Yes' if settled else 'No'}"
+                                }
+                            ]
+                        }
+                    ]
                 }
+                
                 response = requests.post(SLACK_WEBHOOK_URL, json=slack_message)
                 if response.status_code != 200:
                     app.logger.error(f"Slack notification failed: {response.text}")
