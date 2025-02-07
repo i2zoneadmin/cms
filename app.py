@@ -5,8 +5,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
 from io import BytesIO
 from reportlab.pdfgen import canvas
+import requests
 
-
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
@@ -455,6 +456,23 @@ def add_finance():
         )
         db.session.add(finance)
         db.session.commit()
+
+        # Send Slack notification
+        try:
+            slack_message = {
+                "text": f":moneybag: A new finance entry has been added!\n"
+                        f"*Added By:* {User.query.get(session['user_id']).username}\n"
+                        f"*Amount:* {amount} {currency}\n"
+                        f"*Transaction Type:* {transaction_type.capitalize()}\n"
+                        f"*Purpose:* {purpose}\n"
+                        f"*Paid By:* {paid_by}\n"
+                        f"*Settled:* {'Yes' if settled else 'No'}"
+            }
+            response = requests.post(SLACK_WEBHOOK_URL, json=slack_message)
+            if response.status_code != 200:
+                app.logger.error(f"Slack notification failed: {response.text}")
+        except Exception as e:
+            app.logger.error(f"Error sending Slack notification: {str(e)}")
 
         flash("Finance record added successfully.", "success")
         return redirect(url_for('home'))
