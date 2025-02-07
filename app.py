@@ -464,41 +464,51 @@ def add_finance():
                 slack_message = {
                     "blocks": [
                         {
-                            "type": "section",
+                            "type": "header",
                             "text": {
-                                "type": "mrkdwn",
-                                "text": ":moneybag: *A new finance entry has been added!* :moneybag:"
+                                "type": "plain_text",
+                                "text": ":moneybag: New Finance Entry Added! :moneybag:",
+                                "emoji": True
                             }
-                        },
-                        {
-                            "type": "divider"
                         },
                         {
                             "type": "section",
                             "fields": [
                                 {
                                     "type": "mrkdwn",
-                                    "text": f"*Added By:*\n{User.query.get(session['user_id']).username}"
+                                    "text": f"*Added By:* {User.query.get(session['user_id']).username}"
                                 },
                                 {
                                     "type": "mrkdwn",
-                                    "text": f"*Amount:*\n{amount} {currency}"
+                                    "text": f"*Amount:* {amount} {currency}"
                                 },
                                 {
                                     "type": "mrkdwn",
-                                    "text": f"*Transaction Type:*\n{transaction_type.capitalize()}"
+                                    "text": f"*Transaction Type:* {transaction_type.capitalize()}"
                                 },
                                 {
                                     "type": "mrkdwn",
-                                    "text": f"*Purpose:*\n{purpose}"
+                                    "text": f"*Purpose:* {purpose}"
                                 },
                                 {
                                     "type": "mrkdwn",
-                                    "text": f"*Paid By:*\n{paid_by}"
+                                    "text": f"*Paid By:* {paid_by}"
                                 },
                                 {
                                     "type": "mrkdwn",
-                                    "text": f"*Settled:*\n{'Yes' if settled else 'No'}"
+                                    "text": f"*Settled:* {'Yes' if settled else 'No'}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "divider"
+                        },
+                        {
+                            "type": "context",
+                            "elements": [
+                                {
+                                    "type": "mrkdwn",
+                                    "text": "For more details, visit the *Finance Dashboard* in your app."
                                 }
                             ]
                         }
@@ -510,6 +520,7 @@ def add_finance():
                     app.logger.error(f"Slack notification failed: {response.text}")
             except Exception as e:
                 app.logger.error(f"Error sending Slack notification: {str(e)}")
+
 
         flash("Finance record added successfully.", "success")
         return redirect(url_for('home'))
