@@ -470,67 +470,40 @@ def edit_finance(finance_id):
         return redirect(url_for('login'))
     
     finance = Finance.query.get_or_404(finance_id)
+
     if request.method == 'POST':
         changes = []
 
-        # Check and update the amount
-        new_amount = float(request.form['amount'])
-        if finance.amount != new_amount:
-            changes.append(f"Amount changed from {finance.amount} to {new_amount}")
-            finance.amount = new_amount
-
-        # Check and update the transaction type
-        new_transaction_type = request.form['transaction_type']
-        if finance.transaction_type != new_transaction_type:
-            changes.append(f"Transaction Type changed from {finance.transaction_type} to {new_transaction_type}")
-            finance.transaction_type = new_transaction_type
-
-        # Check and update the purpose
-        new_purpose = request.form['purpose']
-        if finance.purpose != new_purpose:
-            changes.append(f"Purpose changed from '{finance.purpose}' to '{new_purpose}'")
-            finance.purpose = new_purpose
-
-        # Check and update the currency
-        new_currency = request.form['currency']
-        if finance.currency != new_currency:
-            changes.append(f"Currency changed from {finance.currency} to {new_currency}")
-            finance.currency = new_currency
-
-        # Check and update the recipient
-        new_recipient = request.form.get('recipient') or request.form.get('hidden_recipient')  # Updated line
-        if finance.recipient != new_recipient:
-            changes.append(f"Recipient changed from {finance.recipient} to {new_recipient}")
-            finance.recipient = new_recipient
-
-        # Check and update the paid_by field
-        new_paid_by = request.form['paid_by']
-        if finance.paid_by != new_paid_by:
-            changes.append(f"Paid By changed from {finance.paid_by} to {new_paid_by}")
-            finance.paid_by = new_paid_by
-
-        # Check and update the settled status
+        # Fetch new values for `settled` and `paid_by`
         new_settled = request.form.get('settled') == '1'
+        new_paid_by = request.form['paid_by']
+
+        # Check and update the `settled` status
         if finance.settled != new_settled:
             changes.append(f"Settled status changed from {'Yes' if finance.settled else 'No'} to {'Yes' if new_settled else 'No'}")
             finance.settled = new_settled
 
-        # Calculate the new balance based on the previous entry
-        prev_finance = Finance.query.filter(Finance.id < finance.id).order_by(Finance.id.desc()).first()
-        prev_balance = prev_finance.balance if prev_finance else 0.0
-        new_balance = prev_balance + new_amount if new_transaction_type == 'credit' else prev_balance - new_amount
-        if finance.balance != new_balance:
-            changes.append(f"Balance recalculated from {finance.balance} to {new_balance}")
-            finance.balance = new_balance
+            # Adjust partner balances based on the updated settled status
+            if finance.debit_type == 'expense':
+                partners = PartnerBalance.query.all()
+                if new_settled:
+                    # Deduct equally from all partners
+                    amount_share = finance.amount / 3
+                    for partner in partners:
+                        partner.balance -= amount_share
+                        db.session.add(partner)
+                else:
+                    # Deduct 2/3 from other partners (excluding the one in `paid_by`)
+                    amount_share = finance.amount / 3
+                    for partner in partners:
+                        if partner.partner_name != new_paid_by:
+                            partner.balance -= amount_share * 2 / 3
+                        db.session.add(partner)
 
-        # Update subsequent balances
-        subsequent_finances = Finance.query.filter(Finance.id > finance.id).order_by(Finance.id.asc()).all()
-        for subsequent_finance in subsequent_finances:
-            if subsequent_finance.transaction_type == 'credit':
-                subsequent_finance.balance += new_amount - finance.amount
-            else:
-                subsequent_finance.balance -= new_amount - finance.amount
-            db.session.add(subsequent_finance)
+        # Check and update the `paid_by` field
+        if finance.paid_by != new_paid_by:
+            changes.append(f"Paid By changed from {finance.paid_by} to {new_paid_by}")
+            finance.paid_by = new_paid_by
 
         # Save the changes and add a revision record
         if changes:
@@ -542,9 +515,13 @@ def edit_finance(finance_id):
             db.session.add(revision)
 
         db.session.commit()
+        flash("Finance record updated successfully.", "success")
         return redirect(url_for('home'))
-    
-    return render_template('edit_finance.html', finance=finance)
+
+    # Fetch all partners for the `paid_by` dropdown
+    partners = PartnerBalance.query.all()
+
+    return render_template('edit_finance.html', finance=finance, partners=partners)
 
 
 @app.route('/finance/revisions/<int:finance_id>')
