@@ -528,6 +528,48 @@ def add_finance():
     partners = PartnerBalance.query.all()
     return render_template('add_finance.html', partners=partners)
 
+@app.route('/finance/delete/<int:finance_id>', methods=['POST'])
+def delete_finance(finance_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    finance_entry = Finance.query.get_or_404(finance_id)
+    # Fetch all partners
+    partners = PartnerBalance.query.all()
+
+    # Revert balances based on the transaction type and debit type
+    if finance_entry.transaction_type == 'credit':
+        # Revert distributed credit amount
+        for partner in partners:
+            partner.balance -= finance_entry.amount / len(partners)
+            db.session.add(partner)
+    elif finance_entry.transaction_type == 'debit':
+        if finance_entry.debit_type == 'expense':
+            if finance_entry.settled:
+                # Revert settled debit amount equally
+                for partner in partners:
+                    partner.balance += finance_entry.amount / len(partners)
+                    db.session.add(partner)
+            else:
+                # Revert unsettled debit amount (2/3 from others, none from paid_by)
+                for partner in partners:
+                    if partner.partner_name != finance_entry.paid_by:
+                        partner.balance += (2 / 3) * finance_entry.amount / (len(partners) - 1)
+                        db.session.add(partner)
+        elif finance_entry.debit_type == 'partner_payment':
+            # Revert partner payment
+            partner = PartnerBalance.query.filter_by(partner_name=finance_entry.partner_paid_to).first()
+            if partner:
+                partner.balance += finance_entry.amount
+                db.session.add(partner)
+
+    # Delete the finance entry
+    db.session.delete(finance_entry)
+    db.session.commit()
+
+    flash("Finance record deleted successfully and balances reverted.", "success")
+    return redirect(url_for('home'))
+
 
 # Create predefined users
 if __name__ == '__main__':
@@ -541,3 +583,26 @@ if __name__ == '__main__':
             db.session.add_all([user1, user2, user3])
             db.session.commit()
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+
+# from app import db, PartnerBalance
+
+# # Fetch all partners
+# partners = PartnerBalance.query.all()
+
+# # Print their details
+# for partner in partners:
+#     print(f"Partner: {partner.partner_name}, Balance: {partner.balance}")
+
+
+# partners = [
+#     PartnerBalance(partner_name="Zain", balance=0.0),
+#     PartnerBalance(partner_name="Hammad", balance=0.0),
+#     PartnerBalance(partner_name="Rizwan", balance=0.0),
+# ]
+
+# db.session.add_all(partners)
+# db.session.commit()
+
+# print("PartnerBalance table seeded successfully!")

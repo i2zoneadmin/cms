@@ -85,6 +85,7 @@
                     <th>Recipient</th>
                     <th>Paid By</th>
                     <th>Settled</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -101,11 +102,16 @@
                     <td>{{ finance.recipient if finance.recipient else 'N/A' }}</td>
                     <td>{{ finance.paid_by }}</td>
                     <td>{{ 'Yes' if finance.settled else 'No' }}</td>
+                    <td>
+                        <form action="/finance/delete/{{ finance.id }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn-delete" onclick="return confirm('Are you sure you want to delete this entry?');">Delete</button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>
+    </div>    
 
     <!-- Partner Balances -->
     <div class="table-container">
