@@ -6,7 +6,9 @@ import pytz
 from io import BytesIO
 from reportlab.pdfgen import canvas
 import requests
+import os
 
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
