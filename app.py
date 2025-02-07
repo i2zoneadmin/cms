@@ -472,7 +472,7 @@ def add_finance():
 
         db.session.commit()
         flash("Finance record added successfully.", "success")
-        return redirect(url_for('finance_dashboard'))
+        return redirect(url_for('home'))
 
     partners = PartnerBalance.query.all()
     return render_template('add_finance.html', partners=partners)
@@ -488,21 +488,21 @@ def delete_finance(finance_id):
     db.session.commit()
 
     flash("Finance record deleted successfully and balances updated.", "success")
-    return redirect(url_for('finance_dashboard'))
+    return redirect(url_for('home'))
 
-@app.route('/finance/dashboard')
-def finance_dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+# @app.route('/finance/dashboard')
+# def finance_dashboard():
+#     if 'user_id' not in session:
+#         return redirect(url_for('login'))
 
-    finance_records = Finance.query.order_by(Finance.date_added.desc()).all()
-    partner_balances = get_partner_balances()
+#     finance_records = Finance.query.order_by(Finance.date_added.desc()).all()
+#     partner_balances = get_partner_balances()
 
-    return render_template(
-        'finance_dashboard.html',
-        finance_records=finance_records,
-        partner_balances=partner_balances
-    )
+#     return render_template(
+#         'finance_dashboard.html',
+#         finance_records=finance_records,
+#         partner_balances=partner_balances
+#     )
 
 
 
