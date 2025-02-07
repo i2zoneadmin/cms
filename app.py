@@ -490,6 +490,25 @@ def delete_finance(finance_id):
     flash("Finance record deleted successfully and balances updated.", "success")
     return redirect(url_for('home'))
 
+# Initialize the database and seed default partner balances
+def initialize_partner_balances():
+    """Populate PartnerBalance table with default partners if empty."""
+    if PartnerBalance.query.count() == 0:
+        default_partners = [
+            PartnerBalance(partner_name="Zain"),
+            PartnerBalance(partner_name="Hammad"),
+            PartnerBalance(partner_name="Rizwan"),
+        ]
+        db.session.add_all(default_partners)
+        db.session.commit()
+        print("PartnerBalance table initialized with default partners.")
+
+# Call this function when the application starts
+with app.app_context():
+    db.create_all()  # Create tables if they don't exist
+    initialize_partner_balances()
+
+
 # @app.route('/finance/dashboard')
 # def finance_dashboard():
 #     if 'user_id' not in session:
