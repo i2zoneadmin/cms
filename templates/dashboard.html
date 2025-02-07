@@ -74,16 +74,16 @@
         <table>
             <thead>
                 <tr>
-                    <th>Added By</th>
-                    <th>Amount</th>
-                    <th>Transaction Type</th>
-                    <th>Debit Type</th>
-                    <th>Currency</th>
-                    <th>Purpose</th>
-                    <th>Date Added</th>
-                    <th>Recipient</th>
-                    <th>Paid By</th>
-                    <th>Actions</th>
+                    <th title="The user who added this finance entry">Added By</th>
+                    <th title="The amount of the transaction">Amount</th>
+                    <th title="The type of transaction (credit or debit)">Transaction Type</th>
+                    <th title="For debits, indicates whether it's an expense or a partner payment">Debit Type</th>
+                    <th title="The currency in which the transaction occurred">Currency</th>
+                    <th title="The purpose of the transaction">Purpose</th>
+                    <th title="The date and time the finance entry was added">Date Added</th>
+                    <th title="The recipient of the transaction, if applicable">Recipient</th>
+                    <th title="The partner who paid for the expense, if applicable">Paid By</th>
+                    <th title="Actions you can perform on this entry, such as delete">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -107,7 +107,7 @@
                 {% endfor %}
             </tbody>
         </table>
-    </div>    
+    </div>
 
     <!-- Partner Balances -->
     <div class="table-container">

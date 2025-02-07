@@ -50,31 +50,32 @@
     {% endwith %}
 
     <form action="/finance/add" method="POST">
-        <label>Transaction Type:</label>
+        <label title="Select whether this is a credit (income) or a debit (expense)">Transaction Type:</label>
         <select name="transaction_type" onchange="toggleFields()" required>
             <option value="credit">Credit</option>
             <option value="debit">Debit</option>
         </select>
 
-        <label>Amount:</label>
+        <label title="Enter the transaction amount in PKR">Amount:</label>
         <input type="number" name="amount" step="0.01" required>
 
+        <!-- Default Currency -->
         <input type="hidden" name="currency" value="PKR">
 
-        <label>Purpose:</label>
+        <label title="Provide a brief description or reason for the transaction">Purpose:</label>
         <input type="text" name="purpose" required>
 
-        <label>Debit Type (for Debits only):</label>
+        <label title="For debits only, specify if it is an expense or a partner payment">Debit Type:</label>
         <select name="debit_type" onchange="toggleFields()" disabled>
             <option value="" disabled selected>Select Type</option>
             <option value="expense">Expense</option>
             <option value="partner_payment">Partner Payment</option>
         </select>
 
-        <label>Recipient (for Expenses only):</label>
+        <label title="For expenses, specify the recipient of the payment (e.g., vendor or service)">Recipient:</label>
         <input type="text" name="recipient" disabled>
 
-        <label>Partner Paid To (for Partner Payments only):</label>
+        <label title="For partner payments, select the partner receiving the payment">Partner Paid To:</label>
         <select name="partner_paid_to" disabled>
             <option value="" disabled selected>Select Partner</option>
             {% for partner in partners %}
@@ -82,14 +83,14 @@
             {% endfor %}
         </select>
 
-        <label>Paid By:</label>
+        <label title="Specify the partner who is paying for the expense">Paid By:</label>
         <select name="paid_by" required>
             {% for partner in partners %}
             <option value="{{ partner.partner_name }}">{{ partner.partner_name }}</option>
             {% endfor %}
         </select>
 
-        <button type="submit" class="btn">Add Finance</button>
+        <button type="submit" class="btn" title="Click to submit this finance record">Add Finance</button>
     </form>
 
     <!-- Flash Messages Styling -->
