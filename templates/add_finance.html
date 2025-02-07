@@ -18,9 +18,12 @@
                 if (debitTypeField.value === 'partner_payment') {
                     partnerPaidField.disabled = false;
                     recipientField.disabled = true;
-                } else {
+                } else if (debitTypeField.value === 'expense') {
                     partnerPaidField.disabled = true;
                     recipientField.disabled = false;
+                } else {
+                    partnerPaidField.disabled = true;
+                    recipientField.disabled = true;
                 }
             } else {
                 debitTypeField.disabled = true;
@@ -29,7 +32,7 @@
             }
         }
 
-        window.onload = toggleFields; // Update state on page load
+        window.onload = toggleFields;
     </script>
 </head>
 <body>
@@ -68,28 +71,28 @@
         <input type="text" name="purpose" required>
 
         <label>Debit Type (for Debits only):</label>
-        <select name="debit_type" onchange="toggleFields()">
+        <select name="debit_type" onchange="toggleFields()" disabled>
             <option value="" disabled selected>Select Type</option>
             <option value="expense">Expense</option>
             <option value="partner_payment">Partner Payment</option>
         </select>
 
         <label>Recipient (for Expenses only):</label>
-        <input type="text" name="recipient">
+        <input type="text" name="recipient" disabled>
 
         <label>Partner Paid To (for Partner Payments only):</label>
-        <select name="partner_paid_to">
+        <select name="partner_paid_to" disabled>
             <option value="" disabled selected>Select Partner</option>
-            <option value="Zain">Zain</option>
-            <option value="Hammad">Hammad</option>
-            <option value="Rizwan">Rizwan</option>
+            {% for partner in partners %}
+            <option value="{{ partner.partner_name }}">{{ partner.partner_name }}</option>
+            {% endfor %}
         </select>
 
         <label>Paid By:</label>
         <select name="paid_by" required>
-            <option value="Zain">Zain</option>
-            <option value="Hammad">Hammad</option>
-            <option value="Rizwan">Rizwan</option>
+            {% for partner in partners %}
+            <option value="{{ partner.partner_name }}">{{ partner.partner_name }}</option>
+            {% endfor %}
         </select>
 
         <button type="submit" class="btn">Add Finance</button>

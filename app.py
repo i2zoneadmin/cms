@@ -59,17 +59,33 @@ class Revision(db.Model):
 #         return render_template('dashboard.html', clients=clients, partner_balances=partner_balances, finances=finances, User=User)
 #     return redirect(url_for('login'))
 
+# @app.route('/')
+# def home():
+#     if 'user_id' in session:
+#         clients = Client.query.order_by(Client.client_no).all()
+#         finances = Finance.query.all()
+#         partners = PartnerBalance.query.all()  # Fetch all partners and their balances
+#         return render_template(
+#             'dashboard.html',
+#             clients=clients,
+#             finances=finances,
+#             partners=partners,
+#             User=User
+#         )
+#     return redirect(url_for('login'))
+
 @app.route('/')
 def home():
     if 'user_id' in session:
         clients = Client.query.order_by(Client.client_no).all()
-        finances = Finance.query.all()
-        partners = PartnerBalance.query.all()  # Fetch all partners and their balances
+        finances = Finance.query.order_by(Finance.date_added.desc()).all()
+        partner_balances = get_partner_balances()  # Compute balances dynamically
+
         return render_template(
             'dashboard.html',
             clients=clients,
             finances=finances,
-            partners=partners,
+            partner_balances=partner_balances,  # Use computed balances instead of stored ones
             User=User
         )
     return redirect(url_for('login'))
@@ -334,6 +350,7 @@ def report_download(client_id):
 ############################# Finance Management System ##################################
 ##########################################################################################
 
+
 class Finance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     added_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -341,18 +358,12 @@ class Finance(db.Model):
     currency = db.Column(db.String(10), nullable=False)
     purpose = db.Column(db.String(255), nullable=False)
     date_added = db.Column(db.DateTime, default=lambda: datetime.now(pst))
-    recipient = db.Column(db.String(100), nullable=True)  # For partner payments
+    recipient = db.Column(db.String(100), nullable=True)
     paid_by = db.Column(db.String(100), nullable=False)
     settled = db.Column(db.Boolean, default=False)
     transaction_type = db.Column(db.String(10), nullable=False)  # "debit" or "credit"
     debit_type = db.Column(db.String(20), nullable=True)  # "expense" or "partner_payment"
-    partner_paid_to = db.Column(db.String(100), nullable=True)  # For partner payments
-    balance = db.Column(db.Float, nullable=False, default=0.0)
-
-class PartnerBalance(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    partner_name = db.Column(db.String(100), unique=True, nullable=False)
-    balance = db.Column(db.Float, nullable=False, default=0.0)
+    partner_paid_to = db.Column(db.String(100), nullable=True)
 
 class FinanceRevision(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -361,39 +372,67 @@ class FinanceRevision(db.Model):
     change_date = db.Column(db.DateTime, default=lambda: datetime.now(pst))
     changes = db.Column(db.Text, nullable=False)
 
+class PartnerBalance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    partner_name = db.Column(db.String(100), unique=True, nullable=False)
+
+# ------------------------- Helper Functions -------------------------
+
+def get_partner_balances():
+    """Compute partner balances dynamically from finance records."""
+    partners = {p.partner_name: 0.0 for p in PartnerBalance.query.all()}  
+
+    for finance in Finance.query.all():
+        if finance.transaction_type == "credit":
+            for partner in partners:
+                partners[partner] += finance.amount / len(partners)
+
+        elif finance.transaction_type == "debit":
+            if finance.debit_type == "partner_payment" and finance.partner_paid_to:
+                partners[finance.partner_paid_to] -= finance.amount
+
+            elif finance.debit_type == "expense":
+                num_partners = len(partners)
+                share = finance.amount / num_partners
+                for partner in partners:
+                    if partner == finance.paid_by:
+                        partners[partner] -= (finance.amount - share)
+                    else:
+                        partners[partner] -= share
+
+    return partners
+
+# ------------------------- Routes -------------------------
+
 @app.route('/finance/add', methods=['GET', 'POST'])
 def add_finance():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        # Fetch the last balance
-        last_finance = Finance.query.order_by(Finance.id.desc()).first()
-        last_balance = last_finance.balance if last_finance else 0.0
-
-        # Fetch form data
         transaction_type = request.form['transaction_type']
         amount = float(request.form['amount'])
         currency = request.form['currency']
         purpose = request.form['purpose']
-        recipient = request.form.get('recipient')  # This can be None for partner payments
-        debit_type = request.form.get('debit_type', None)  # 'expense' or 'partner_payment'
+        recipient = request.form.get('recipient')
+        debit_type = request.form.get('debit_type', None)
         partner_paid_to = request.form.get('partner_paid_to', None)
         paid_by = request.form['paid_by']
 
-        # Handle credit (income) logic
         if transaction_type == 'credit':
-            # Distribute equally among partners
-            for partner in PartnerBalance.query.all():
-                partner.balance += amount / 3
-                db.session.add(partner)
-            new_balance = last_balance + amount
+            new_finance = Finance(
+                added_by=session['user_id'],
+                amount=amount,
+                currency=currency,
+                purpose=purpose,
+                recipient=recipient,
+                paid_by=paid_by,
+                transaction_type=transaction_type
+            )
+            db.session.add(new_finance)
 
-        # Handle debit logic
         elif transaction_type == 'debit':
             if debit_type == 'partner_payment':
-                # Handle partner payment logic
-                partner_paid_to = partner_paid_to.strip() if partner_paid_to else None
                 partner = PartnerBalance.query.filter(
                     PartnerBalance.partner_name.ilike(partner_paid_to)
                 ).first()
@@ -402,118 +441,38 @@ def add_finance():
                     flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
                     return redirect(url_for('add_finance'))
 
-                if partner.balance < amount:
-                    flash(f"Error: Insufficient balance for {partner_paid_to}. Maximum available: {partner.balance:.2f}", "danger")
-                    return redirect(url_for('add_finance'))
-
-                partner.balance -= amount
-                db.session.add(partner)
-                new_balance = last_balance - amount
+                new_finance = Finance(
+                    added_by=session['user_id'],
+                    amount=amount,
+                    currency=currency,
+                    purpose=purpose,
+                    recipient=recipient,
+                    paid_by=paid_by,
+                    transaction_type=transaction_type,
+                    debit_type=debit_type,
+                    partner_paid_to=partner_paid_to
+                )
+                db.session.add(new_finance)
 
             elif debit_type == 'expense':
-                # Get all partners
-                all_partners = PartnerBalance.query.all()
-                total_partners = len(all_partners)
-                
-                # Calculate the equal share of the expense for each partner
-                share = amount / total_partners
-                
-                for partner in all_partners:
-                    if partner.partner_name == paid_by:
-                        # The paying partner bears only their share of the expense (reimbursed for the rest)
-                        partner.balance -= (amount - share)
-                    else:
-                        # Other partners bear their equal share
-                        partner.balance -= share
-                    
-                    db.session.add(partner)
-
-                # Update the total balance
-                new_balance = last_balance - amount
+                new_finance = Finance(
+                    added_by=session['user_id'],
+                    amount=amount,
+                    currency=currency,
+                    purpose=purpose,
+                    recipient=recipient,
+                    paid_by=paid_by,
+                    transaction_type=transaction_type,
+                    debit_type=debit_type
+                )
+                db.session.add(new_finance)
             else:
                 flash("Error: Debit type is required for debit transactions.", "danger")
                 return redirect(url_for('add_finance'))
-        else:
-            flash("Error: Invalid transaction type.", "danger")
-            return redirect(url_for('add_finance'))
 
-        # Create the finance record
-        finance = Finance(
-            added_by=session['user_id'],
-            amount=amount,
-            currency=currency,
-            purpose=purpose,
-            recipient=recipient,
-            paid_by=paid_by,
-            transaction_type=transaction_type,
-            debit_type=debit_type,
-            partner_paid_to=partner_paid_to,
-            balance=new_balance,
-        )
-        db.session.add(finance)
         db.session.commit()
-
-        # Send Slack notification
-        if SLACK_WEBHOOK_URL:
-            try:
-                slack_message = {
-                    "blocks": [
-                        {
-                            "type": "header",
-                            "text": {
-                                "type": "plain_text",
-                                "text": ":moneybag: New Finance Entry Added! :moneybag:",
-                                "emoji": True
-                            }
-                        },
-                        {
-                            "type": "section",
-                            "fields": [
-                                {
-                                    "type": "mrkdwn",
-                                    "text": f"*Added By:* {User.query.get(session['user_id']).username}"
-                                },
-                                {
-                                    "type": "mrkdwn",
-                                    "text": f"*Amount:* {amount} {currency}"
-                                },
-                                {
-                                    "type": "mrkdwn",
-                                    "text": f"*Transaction Type:* {transaction_type.capitalize()}"
-                                },
-                                {
-                                    "type": "mrkdwn",
-                                    "text": f"*Purpose:* {purpose}"
-                                },
-                                {
-                                    "type": "mrkdwn",
-                                    "text": f"*Paid By:* {paid_by}"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "divider"
-                        },
-                        {
-                            "type": "context",
-                            "elements": [
-                                {
-                                    "type": "mrkdwn",
-                                    "text": "For more details, visit the *Finance Dashboard* in your app."
-                                }
-                            ]
-                        }
-                    ]
-                }
-
-                response = requests.post(SLACK_WEBHOOK_URL, json=slack_message)
-                if response.status_code != 200:
-                    app.logger.error(f"Slack notification failed: {response.text}")
-            except Exception as e:
-                app.logger.error(f"Error sending Slack notification: {str(e)}")
-
         flash("Finance record added successfully.", "success")
-        return redirect(url_for('home'))
+        return redirect(url_for('finance_dashboard'))
 
     partners = PartnerBalance.query.all()
     return render_template('add_finance.html', partners=partners)
@@ -524,41 +483,259 @@ def delete_finance(finance_id):
         return redirect(url_for('login'))
 
     finance_entry = Finance.query.get_or_404(finance_id)
-    # Fetch all partners
-    partners = PartnerBalance.query.all()
 
-    # Revert balances based on the transaction type and debit type
-    if finance_entry.transaction_type == 'credit':
-        # Revert distributed credit amount
-        for partner in partners:
-            partner.balance -= finance_entry.amount / len(partners)
-            db.session.add(partner)
-    elif finance_entry.transaction_type == 'debit':
-        if finance_entry.debit_type == 'expense':
-            if finance_entry.settled:
-                # Revert settled debit amount equally
-                for partner in partners:
-                    partner.balance += finance_entry.amount / len(partners)
-                    db.session.add(partner)
-            else:
-                # Revert unsettled debit amount (2/3 from others, none from paid_by)
-                for partner in partners:
-                    if partner.partner_name != finance_entry.paid_by:
-                        partner.balance += (2 / 3) * finance_entry.amount / (len(partners) - 1)
-                        db.session.add(partner)
-        elif finance_entry.debit_type == 'partner_payment':
-            # Revert partner payment
-            partner = PartnerBalance.query.filter_by(partner_name=finance_entry.partner_paid_to).first()
-            if partner:
-                partner.balance += finance_entry.amount
-                db.session.add(partner)
-
-    # Delete the finance entry
     db.session.delete(finance_entry)
     db.session.commit()
 
-    flash("Finance record deleted successfully and balances reverted.", "success")
-    return redirect(url_for('home'))
+    flash("Finance record deleted successfully and balances updated.", "success")
+    return redirect(url_for('finance_dashboard'))
+
+@app.route('/finance/dashboard')
+def finance_dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    finance_records = Finance.query.order_by(Finance.date_added.desc()).all()
+    partner_balances = get_partner_balances()
+
+    return render_template(
+        'finance_dashboard.html',
+        finance_records=finance_records,
+        partner_balances=partner_balances
+    )
+
+
+
+
+##############################################################################################
+###############################################################################################
+###########################################################################################
+
+# class Finance(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     added_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+#     amount = db.Column(db.Float, nullable=False)
+#     currency = db.Column(db.String(10), nullable=False)
+#     purpose = db.Column(db.String(255), nullable=False)
+#     date_added = db.Column(db.DateTime, default=lambda: datetime.now(pst))
+#     recipient = db.Column(db.String(100), nullable=True)  # For partner payments
+#     paid_by = db.Column(db.String(100), nullable=False)
+#     settled = db.Column(db.Boolean, default=False)
+#     transaction_type = db.Column(db.String(10), nullable=False)  # "debit" or "credit"
+#     debit_type = db.Column(db.String(20), nullable=True)  # "expense" or "partner_payment"
+#     partner_paid_to = db.Column(db.String(100), nullable=True)  # For partner payments
+#     balance = db.Column(db.Float, nullable=False, default=0.0)
+
+# class PartnerBalance(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     partner_name = db.Column(db.String(100), unique=True, nullable=False)
+#     balance = db.Column(db.Float, nullable=False, default=0.0)
+
+# class FinanceRevision(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     finance_id = db.Column(db.Integer, db.ForeignKey('finance.id'), nullable=False)
+#     changed_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+#     change_date = db.Column(db.DateTime, default=lambda: datetime.now(pst))
+#     changes = db.Column(db.Text, nullable=False)
+
+# @app.route('/finance/add', methods=['GET', 'POST'])
+# def add_finance():
+#     if 'user_id' not in session:
+#         return redirect(url_for('login'))
+
+#     if request.method == 'POST':
+#         # Fetch the last balance
+#         last_finance = Finance.query.order_by(Finance.id.desc()).first()
+#         last_balance = last_finance.balance if last_finance else 0.0
+
+#         # Fetch form data
+#         transaction_type = request.form['transaction_type']
+#         amount = float(request.form['amount'])
+#         currency = request.form['currency']
+#         purpose = request.form['purpose']
+#         recipient = request.form.get('recipient')  # This can be None for partner payments
+#         debit_type = request.form.get('debit_type', None)  # 'expense' or 'partner_payment'
+#         partner_paid_to = request.form.get('partner_paid_to', None)
+#         paid_by = request.form['paid_by']
+
+#         # Handle credit (income) logic
+#         if transaction_type == 'credit':
+#             # Distribute equally among partners
+#             for partner in PartnerBalance.query.all():
+#                 partner.balance += amount / 3
+#                 db.session.add(partner)
+#             new_balance = last_balance + amount
+
+#         # Handle debit logic
+#         elif transaction_type == 'debit':
+#             if debit_type == 'partner_payment':
+#                 # Handle partner payment logic
+#                 partner_paid_to = partner_paid_to.strip() if partner_paid_to else None
+#                 partner = PartnerBalance.query.filter(
+#                     PartnerBalance.partner_name.ilike(partner_paid_to)
+#                 ).first()
+
+#                 if not partner:
+#                     flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
+#                     return redirect(url_for('add_finance'))
+
+#                 if partner.balance < amount:
+#                     flash(f"Error: Insufficient balance for {partner_paid_to}. Maximum available: {partner.balance:.2f}", "danger")
+#                     return redirect(url_for('add_finance'))
+
+#                 partner.balance -= amount
+#                 db.session.add(partner)
+#                 new_balance = last_balance - amount
+
+#             elif debit_type == 'expense':
+#                 # Get all partners
+#                 all_partners = PartnerBalance.query.all()
+#                 total_partners = len(all_partners)
+                
+#                 # Calculate the equal share of the expense for each partner
+#                 share = amount / total_partners
+                
+#                 for partner in all_partners:
+#                     if partner.partner_name == paid_by:
+#                         # The paying partner bears only their share of the expense (reimbursed for the rest)
+#                         partner.balance -= (amount - share)
+#                     else:
+#                         # Other partners bear their equal share
+#                         partner.balance -= share
+                    
+#                     db.session.add(partner)
+
+#                 # Update the total balance
+#                 new_balance = last_balance - amount
+#             else:
+#                 flash("Error: Debit type is required for debit transactions.", "danger")
+#                 return redirect(url_for('add_finance'))
+#         else:
+#             flash("Error: Invalid transaction type.", "danger")
+#             return redirect(url_for('add_finance'))
+
+#         # Create the finance record
+#         finance = Finance(
+#             added_by=session['user_id'],
+#             amount=amount,
+#             currency=currency,
+#             purpose=purpose,
+#             recipient=recipient,
+#             paid_by=paid_by,
+#             transaction_type=transaction_type,
+#             debit_type=debit_type,
+#             partner_paid_to=partner_paid_to,
+#             balance=new_balance,
+#         )
+#         db.session.add(finance)
+#         db.session.commit()
+
+#         # Send Slack notification
+#         if SLACK_WEBHOOK_URL:
+#             try:
+#                 slack_message = {
+#                     "blocks": [
+#                         {
+#                             "type": "header",
+#                             "text": {
+#                                 "type": "plain_text",
+#                                 "text": ":moneybag: New Finance Entry Added! :moneybag:",
+#                                 "emoji": True
+#                             }
+#                         },
+#                         {
+#                             "type": "section",
+#                             "fields": [
+#                                 {
+#                                     "type": "mrkdwn",
+#                                     "text": f"*Added By:* {User.query.get(session['user_id']).username}"
+#                                 },
+#                                 {
+#                                     "type": "mrkdwn",
+#                                     "text": f"*Amount:* {amount} {currency}"
+#                                 },
+#                                 {
+#                                     "type": "mrkdwn",
+#                                     "text": f"*Transaction Type:* {transaction_type.capitalize()}"
+#                                 },
+#                                 {
+#                                     "type": "mrkdwn",
+#                                     "text": f"*Purpose:* {purpose}"
+#                                 },
+#                                 {
+#                                     "type": "mrkdwn",
+#                                     "text": f"*Paid By:* {paid_by}"
+#                                 }
+#                             ]
+#                         },
+#                         {
+#                             "type": "divider"
+#                         },
+#                         {
+#                             "type": "context",
+#                             "elements": [
+#                                 {
+#                                     "type": "mrkdwn",
+#                                     "text": "For more details, visit the *Finance Dashboard* in your app."
+#                                 }
+#                             ]
+#                         }
+#                     ]
+#                 }
+
+#                 response = requests.post(SLACK_WEBHOOK_URL, json=slack_message)
+#                 if response.status_code != 200:
+#                     app.logger.error(f"Slack notification failed: {response.text}")
+#             except Exception as e:
+#                 app.logger.error(f"Error sending Slack notification: {str(e)}")
+
+#         flash("Finance record added successfully.", "success")
+#         return redirect(url_for('home'))
+
+#     partners = PartnerBalance.query.all()
+#     return render_template('add_finance.html', partners=partners)
+
+# @app.route('/finance/delete/<int:finance_id>', methods=['POST'])
+# def delete_finance(finance_id):
+#     if 'user_id' not in session:
+#         return redirect(url_for('login'))
+
+#     finance_entry = Finance.query.get_or_404(finance_id)
+#     # Fetch all partners
+#     partners = PartnerBalance.query.all()
+
+#     # Revert balances based on the transaction type and debit type
+#     if finance_entry.transaction_type == 'credit':
+#         # Revert distributed credit amount
+#         for partner in partners:
+#             partner.balance -= finance_entry.amount / len(partners)
+#             db.session.add(partner)
+#     elif finance_entry.transaction_type == 'debit':
+#         if finance_entry.debit_type == 'expense':
+#             if finance_entry.settled:
+#                 # Revert settled debit amount equally
+#                 for partner in partners:
+#                     partner.balance += finance_entry.amount / len(partners)
+#                     db.session.add(partner)
+#             else:
+#                 # Revert unsettled debit amount (2/3 from others, none from paid_by)
+#                 for partner in partners:
+#                     if partner.partner_name != finance_entry.paid_by:
+#                         partner.balance += (2 / 3) * finance_entry.amount / (len(partners) - 1)
+#                         db.session.add(partner)
+#         elif finance_entry.debit_type == 'partner_payment':
+#             # Revert partner payment
+#             partner = PartnerBalance.query.filter_by(partner_name=finance_entry.partner_paid_to).first()
+#             if partner:
+#                 partner.balance += finance_entry.amount
+#                 db.session.add(partner)
+
+#     # Delete the finance entry
+#     db.session.delete(finance_entry)
+#     db.session.commit()
+
+#     flash("Finance record deleted successfully and balances reverted.", "success")
+#     return redirect(url_for('home'))
 
 
 # Create predefined users

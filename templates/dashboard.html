@@ -78,7 +78,6 @@
                     <th>Amount</th>
                     <th>Transaction Type</th>
                     <th>Debit Type</th>
-                    <th>Balance</th>
                     <th>Currency</th>
                     <th>Purpose</th>
                     <th>Date Added</th>
@@ -94,7 +93,6 @@
                     <td>{{ finance.amount }}</td>
                     <td>{{ finance.transaction_type }}</td>
                     <td>{{ finance.debit_type if finance.transaction_type == 'debit' else 'N/A' }}</td>
-                    <td>{{ finance.balance }}</td>
                     <td>{{ finance.currency }}</td>
                     <td>{{ finance.purpose }}</td>
                     <td>{{ finance.date_added.strftime('%Y-%m-%d %H:%M') }}</td>
@@ -122,17 +120,18 @@
                 </tr>
             </thead>
             <tbody>
-                {% for partner in partners %}
+                {% for partner, balance in partner_balances.items() %}
                 <tr>
-                    <td>{{ partner.partner_name }}</td>
-                    <td>{{ "%.2f" % partner.balance }}</td>
+                    <td>{{ partner }}</td>
+                    <td>{{ "%.2f" % balance }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
         <!-- Total Balance Section -->
         <div style="margin-top: 20px; font-weight: bold; text-align: center; color: #444;">
-            Total Balance: {{ "%.2f" % partners|sum(attribute='balance') }}
+            Total Balance: {{ "%.2f" % partner_balances.values()|sum }}
         </div>
     </div>
 </body>
