@@ -363,7 +363,7 @@ class Finance(db.Model):
     settled = db.Column(db.Boolean, default=False)
     transaction_type = db.Column(db.String(10), nullable=False)  # "debit" or "credit"
     debit_type = db.Column(db.String(20), nullable=True)  # "expense" or "partner_payment"
-    partner_paid_to = db.Column(db.String(100), nullable=True)
+    partner_paid_to = db.Column(db.String(100), nullable=True)  # For partner payments
 
 class FinanceRevision(db.Model):
     id = db.Column(db.Integer, primary_key=True)
