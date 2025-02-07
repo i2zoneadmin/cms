@@ -380,7 +380,6 @@ def add_finance():
         debit_type = request.form.get('debit_type', None)  # 'expense' or 'partner_payment'
         partner_paid_to = request.form.get('partner_paid_to', None)
         paid_by = request.form['paid_by']
-        settled = request.form.get('settled') == '1'
 
         # Handle credit (income) logic
         if transaction_type == 'credit':
@@ -393,7 +392,7 @@ def add_finance():
         # Handle debit logic
         elif transaction_type == 'debit':
             if debit_type == 'partner_payment':
-                # Existing logic for partner payment
+                # Handle partner payment logic
                 partner_paid_to = partner_paid_to.strip() if partner_paid_to else None
                 partner = PartnerBalance.query.filter(
                     PartnerBalance.partner_name.ilike(partner_paid_to)
@@ -412,25 +411,15 @@ def add_finance():
                 new_balance = last_balance - amount
 
             elif debit_type == 'expense':
-                # Handle "Expense" logic
+                # Handle expense logic
                 all_partners = PartnerBalance.query.all()
-                total_partners = len(all_partners)
+                other_partners = [partner for partner in all_partners if partner.partner_name != paid_by]
 
-                if settled:
-                    # Deduct equally from all partners
-                    share = amount / total_partners
-                    for partner in all_partners:
-                        partner.balance -= share
-                        db.session.add(partner)
-                else:
-                    # Deduct 2/3 equally from other partners, excluding the `paid_by` partner
-                    other_partners = [
-                        partner for partner in all_partners if partner.partner_name != paid_by
-                    ]
-                    share = (2 / 3) * amount / len(other_partners)
-                    for partner in other_partners:
-                        partner.balance -= share
-                        db.session.add(partner)
+                # Deduct 2/3 of the amount equally from other partners
+                share = (2 / 3) * amount / len(other_partners)
+                for partner in other_partners:
+                    partner.balance -= share
+                    db.session.add(partner)
 
                 # Update the total balance
                 new_balance = last_balance - amount
@@ -449,7 +438,6 @@ def add_finance():
             purpose=purpose,
             recipient=recipient,
             paid_by=paid_by,
-            settled=settled,
             transaction_type=transaction_type,
             debit_type=debit_type,
             partner_paid_to=partner_paid_to,
@@ -458,7 +446,7 @@ def add_finance():
         db.session.add(finance)
         db.session.commit()
 
-        # Send Slack notification only if the webhook URL is available
+        # Send Slack notification
         if SLACK_WEBHOOK_URL:
             try:
                 slack_message = {
@@ -493,10 +481,6 @@ def add_finance():
                                 {
                                     "type": "mrkdwn",
                                     "text": f"*Paid By:* {paid_by}"
-                                },
-                                {
-                                    "type": "mrkdwn",
-                                    "text": f"*Settled:* {'Yes' if settled else 'No'}"
                                 }
                             ]
                         },
@@ -514,13 +498,12 @@ def add_finance():
                         }
                     ]
                 }
-                
+
                 response = requests.post(SLACK_WEBHOOK_URL, json=slack_message)
                 if response.status_code != 200:
                     app.logger.error(f"Slack notification failed: {response.text}")
             except Exception as e:
                 app.logger.error(f"Error sending Slack notification: {str(e)}")
-
 
         flash("Finance record added successfully.", "success")
         return redirect(url_for('home'))
