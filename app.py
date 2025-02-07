@@ -391,10 +391,8 @@ def add_finance():
         # Handle debit logic
         elif transaction_type == 'debit':
             if debit_type == 'partner_payment':
-                # Clean up the partner name to avoid case sensitivity or whitespace issues
+                # Existing logic for partner payment
                 partner_paid_to = partner_paid_to.strip() if partner_paid_to else None
-
-                # Check if the partner exists
                 partner = PartnerBalance.query.filter(
                     PartnerBalance.partner_name.ilike(partner_paid_to)
                 ).first()
@@ -403,20 +401,36 @@ def add_finance():
                     flash(f"Error: Partner '{partner_paid_to}' does not exist.", "danger")
                     return redirect(url_for('add_finance'))
 
-                # Check if the partner has sufficient balance
                 if partner.balance < amount:
                     flash(f"Error: Insufficient balance for {partner_paid_to}. Maximum available: {partner.balance:.2f}", "danger")
                     return redirect(url_for('add_finance'))
 
-                # Deduct from the specific partner's balance
                 partner.balance -= amount
                 db.session.add(partner)
-
-                # Deduct the amount from the total balance
                 new_balance = last_balance - amount
 
             elif debit_type == 'expense':
-                # Deduct the amount from the total balance (does not affect partner shares)
+                # Handle "Expense" logic
+                all_partners = PartnerBalance.query.all()
+                total_partners = len(all_partners)
+
+                if settled:
+                    # Deduct equally from all partners
+                    share = amount / total_partners
+                    for partner in all_partners:
+                        partner.balance -= share
+                        db.session.add(partner)
+                else:
+                    # Deduct 2/3 equally from other partners, excluding the `paid_by` partner
+                    other_partners = [
+                        partner for partner in all_partners if partner.partner_name != paid_by
+                    ]
+                    share = (2 / 3) * amount / len(other_partners)
+                    for partner in other_partners:
+                        partner.balance -= share
+                        db.session.add(partner)
+
+                # Update the total balance
                 new_balance = last_balance - amount
             else:
                 flash("Error: Debit type is required for debit transactions.", "danger")
@@ -431,7 +445,7 @@ def add_finance():
             amount=amount,
             currency=currency,
             purpose=purpose,
-            recipient=recipient,  # May be None for partner payments
+            recipient=recipient,
             paid_by=paid_by,
             settled=settled,
             transaction_type=transaction_type,
@@ -445,8 +459,7 @@ def add_finance():
         flash("Finance record added successfully.", "success")
         return redirect(url_for('home'))
 
-    # Update to fetch partners dynamically
-    partners = PartnerBalance.query.all()  # Correctly fetch from database
+    partners = PartnerBalance.query.all()
     return render_template('add_finance.html', partners=partners)
 
 
