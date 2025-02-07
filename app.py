@@ -411,14 +411,22 @@ def add_finance():
                 new_balance = last_balance - amount
 
             elif debit_type == 'expense':
-                # Handle expense logic
+                # Get all partners
                 all_partners = PartnerBalance.query.all()
-                other_partners = [partner for partner in all_partners if partner.partner_name != paid_by]
-
-                # Deduct 2/3 of the amount equally from other partners
-                share = (2 / 3) * amount / len(other_partners)
-                for partner in other_partners:
-                    partner.balance -= share
+                total_partners = len(all_partners)
+                
+                # Calculate the equal share of the expense for each partner
+                share = amount / total_partners
+                
+                # Deduct each partner's share of the expense
+                for partner in all_partners:
+                    if partner.partner_name == paid_by:
+                        # The paying partner's balance is reduced only by their share (they've already paid the full amount)
+                        partner.balance -= (amount - share)
+                    else:
+                        # Other partners' balances are reduced by their share
+                        partner.balance -= share
+                    
                     db.session.add(partner)
 
                 # Update the total balance
