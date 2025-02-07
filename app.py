@@ -395,7 +395,7 @@ def get_partner_balances():
                 partners[finance.partner_paid_to] -= finance.amount
 
             elif finance.debit_type == "expense":
-                # Expense split equally among all partners
+                # Split the expense equally among all partners
                 num_partners = len(partners)
                 share = finance.amount / num_partners
 
@@ -403,9 +403,9 @@ def get_partner_balances():
                 for partner in partners:
                     partners[partner] -= share
 
-                # Reimburse the paying partner
+                # Reimburse the paying partner for the shares of the other partners
                 if finance.paid_by in partners:
-                    partners[finance.paid_by] += finance.amount - share  # Add back shares from others
+                    partners[finance.paid_by] += finance.amount - share
 
     return partners
 
