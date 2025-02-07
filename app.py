@@ -464,72 +464,72 @@ def add_finance():
 
 
 
-@app.route('/finance/edit/<int:finance_id>', methods=['GET', 'POST'])
-def edit_finance(finance_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+# @app.route('/finance/edit/<int:finance_id>', methods=['GET', 'POST'])
+# def edit_finance(finance_id):
+#     if 'user_id' not in session:
+#         return redirect(url_for('login'))
     
-    finance = Finance.query.get_or_404(finance_id)
+#     finance = Finance.query.get_or_404(finance_id)
 
-    if request.method == 'POST':
-        changes = []
+#     if request.method == 'POST':
+#         changes = []
 
-        # Fetch new values for `settled` and `paid_by`
-        new_settled = request.form.get('settled') == '1'
-        new_paid_by = request.form['paid_by']
+#         # Fetch new values for `settled` and `paid_by`
+#         new_settled = request.form.get('settled') == '1'
+#         new_paid_by = request.form['paid_by']
 
-        # Check and update the `settled` status
-        if finance.settled != new_settled:
-            changes.append(f"Settled status changed from {'Yes' if finance.settled else 'No'} to {'Yes' if new_settled else 'No'}")
-            finance.settled = new_settled
+#         # Check and update the `settled` status
+#         if finance.settled != new_settled:
+#             changes.append(f"Settled status changed from {'Yes' if finance.settled else 'No'} to {'Yes' if new_settled else 'No'}")
+#             finance.settled = new_settled
 
-            # Adjust partner balances based on the updated settled status
-            if finance.debit_type == 'expense':
-                partners = PartnerBalance.query.all()
-                if new_settled:
-                    # Deduct equally from all partners
-                    amount_share = finance.amount / 3
-                    for partner in partners:
-                        partner.balance -= amount_share
-                        db.session.add(partner)
-                else:
-                    # Deduct 2/3 from other partners (excluding the one in `paid_by`)
-                    amount_share = finance.amount / 3
-                    for partner in partners:
-                        if partner.partner_name != new_paid_by:
-                            partner.balance -= amount_share * 2 / 3
-                        db.session.add(partner)
+#             # Adjust partner balances based on the updated settled status
+#             if finance.debit_type == 'expense':
+#                 partners = PartnerBalance.query.all()
+#                 if new_settled:
+#                     # Deduct equally from all partners
+#                     amount_share = finance.amount / 3
+#                     for partner in partners:
+#                         partner.balance -= amount_share
+#                         db.session.add(partner)
+#                 else:
+#                     # Deduct 2/3 from other partners (excluding the one in `paid_by`)
+#                     amount_share = finance.amount / 3
+#                     for partner in partners:
+#                         if partner.partner_name != new_paid_by:
+#                             partner.balance -= amount_share * 2 / 3
+#                         db.session.add(partner)
 
-        # Check and update the `paid_by` field
-        if finance.paid_by != new_paid_by:
-            changes.append(f"Paid By changed from {finance.paid_by} to {new_paid_by}")
-            finance.paid_by = new_paid_by
+#         # Check and update the `paid_by` field
+#         if finance.paid_by != new_paid_by:
+#             changes.append(f"Paid By changed from {finance.paid_by} to {new_paid_by}")
+#             finance.paid_by = new_paid_by
 
-        # Save the changes and add a revision record
-        if changes:
-            revision = FinanceRevision(
-                finance_id=finance.id,
-                changed_by=session['user_id'],
-                changes='; '.join(changes),
-            )
-            db.session.add(revision)
+#         # Save the changes and add a revision record
+#         if changes:
+#             revision = FinanceRevision(
+#                 finance_id=finance.id,
+#                 changed_by=session['user_id'],
+#                 changes='; '.join(changes),
+#             )
+#             db.session.add(revision)
 
-        db.session.commit()
-        flash("Finance record updated successfully.", "success")
-        return redirect(url_for('home'))
+#         db.session.commit()
+#         flash("Finance record updated successfully.", "success")
+#         return redirect(url_for('home'))
 
-    # Fetch all partners for the `paid_by` dropdown
-    partners = PartnerBalance.query.all()
+#     # Fetch all partners for the `paid_by` dropdown
+#     partners = PartnerBalance.query.all()
 
-    return render_template('edit_finance.html', finance=finance, partners=partners)
+#     return render_template('edit_finance.html', finance=finance, partners=partners)
 
 
-@app.route('/finance/revisions/<int:finance_id>')
-def finance_revisions(finance_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    revisions = FinanceRevision.query.filter_by(finance_id=finance_id).all()
-    return render_template('revisions_finance.html', revisions=revisions, User=User)
+# @app.route('/finance/revisions/<int:finance_id>')
+# def finance_revisions(finance_id):
+#     if 'user_id' not in session:
+#         return redirect(url_for('login'))
+#     revisions = FinanceRevision.query.filter_by(finance_id=finance_id).all()
+#     return render_template('revisions_finance.html', revisions=revisions, User=User)
 
 
 # Create predefined users

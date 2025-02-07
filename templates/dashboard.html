@@ -68,6 +68,7 @@
         </table>
     </div>
 
+    <!-- Finance Table -->
     <div class="table-container">
         <h2>Finances</h2>
         <table>
@@ -84,7 +85,6 @@
                     <th>Recipient</th>
                     <th>Paid By</th>
                     <th>Settled</th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -101,15 +101,11 @@
                     <td>{{ finance.recipient if finance.recipient else 'N/A' }}</td>
                     <td>{{ finance.paid_by }}</td>
                     <td>{{ 'Yes' if finance.settled else 'No' }}</td>
-                    <td>
-                        <a href="/finance/edit/{{ finance.id }}">Edit</a>
-                        <a href="/finance/revisions/{{ finance.id }}">Revisions</a>
-                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>    
+    </div>
 
     <!-- Partner Balances -->
     <div class="table-container">
